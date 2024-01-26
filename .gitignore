@@ -1,6 +1,5 @@
 .python-version
 .idea/
-/examobot/
 /data/  
+/examobot/
 __pycache__/
-
