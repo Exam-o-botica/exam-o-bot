@@ -45,7 +45,7 @@ class User(Base):
     id: Mapped[int] = mapped_column(
         primary_key=True, autoincrement=False, nullable=False, index=True)
     name: Mapped[str] = mapped_column(nullable=False)
-    roles: Mapped[List["Role"]] = mapped_column(nullable=False, default=Role.STUDENT)
+    roles: Mapped[Role] = mapped_column(nullable=False, default=Role.STUDENT)
 
     answers: Mapped[List["Answer"]] = relationship(back_populates="user", cascade="all,delete")  # Parent
 
@@ -105,7 +105,7 @@ class Task(Base):
     title: Mapped[Optional[str]] = mapped_column(nullable=True, default=None)
     text: Mapped[str] = mapped_column(nullable=False)
     correct_answer: Mapped[Optional[str]] = mapped_column(nullable=True, default=None)
-    images: Mapped[Optional[LargeBinary]] = mapped_column(nullable=True, default=None)
+    images = Column(LargeBinary, nullable=True, default=None)
     score: Mapped[int] = mapped_column(nullable=False, default=0)
     task_type: Mapped[str] = mapped_column(nullable=False)
     meta_data: Mapped[Optional[str]] = mapped_column(nullable=True, default=None)
