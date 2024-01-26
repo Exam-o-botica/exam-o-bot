@@ -69,6 +69,8 @@ class Classroom(Base):
 
     id: Mapped[str] = mapped_column(primary_key=True, autoincrement=False)
 
+    title: Mapped[str] = mapped_column(primary_key=False)
+
     tests: Mapped[List["Test"]] = relationship(back_populates="classroom", cascade="all,delete")  # Parent
 
     author_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
