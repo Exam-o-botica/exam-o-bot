@@ -1,4 +1,5 @@
 .python-version
 .idea/
-/cinemabot/
+/examobot/
+/data/  
 __pycache__/
