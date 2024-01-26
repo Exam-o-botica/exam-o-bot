@@ -4,6 +4,7 @@ from sqlalchemy import select, insert, join
 
 from src.examobot.db.tables import Test, Task, Role, User, Classroom
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncEngine
+import uuid
 
 from src.examobot.db.tables import Base
 
@@ -33,47 +34,64 @@ class DBManager:
             async with engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
 
-#
-# async def get_test_titles(self):
-#     query = select(Test.title)
-#     async with self.session_maker() as session:
-#         tests = await session.execute(query)
-#
-#     return tests.all()
-#
-# async def get_test_and_author_by_test_title(self, title: str):
-#     query = select(Test, User).join(User).where(Test.title == title)
-#     async with self.session_maker() as session:
-#         test = await session.execute(query)
-#
-#     result = test.first()
-#     return result[0], result[1]
-#
-# async def get_tasks_by_test_id(self, test_id: int):
-#     query = select(Task).where(Task.test_id == test_id).order_by(Task.order_id)
-#     async with self.session_maker() as session:
-#         tasks = await session.execute(query)
-#
-#     return tasks.scalars().all()
-#
-# return tests.all()
+    #
+    # async def get_test_titles(self):
+    #     query = select(Test.title)
+    #     async with self.session_maker() as session:
+    #         tests = await session.execute(query)
+    #
+    #     return tests.all()
+    #
+    # async def get_test_and_author_by_test_title(self, title: str):
+    #     query = select(Test, User).join(User).where(Test.title == title)
+    #     async with self.session_maker() as session:
+    #         test = await session.execute(query)
+    #
+    #     result = test.first()
+    #     return result[0], result[1]
+    #
+    # async def get_tasks_by_test_id(self, test_id: int):
+    #     query = select(Task).where(Task.test_id == test_id).order_by(Task.order_id)
+    #     async with self.session_maker() as session:
+    #         tasks = await session.execute(query)
+    #
+    #     return tasks.scalars().all()
+    #
+    # return tests.all()
 
+    async def get_test_and_author_by_test_title(self, title: str):
+        query = select(Test, User).join(User).where(Test.title == title)
+        async with self.session_maker() as session:
+            test = await session.execute(query)
 
-async def get_test_and_author_by_test_title(self, title: str):
-    query = select(Test, User).join(User).where(Test.title == title)
-    async with self.session_maker() as session:
-        test = await session.execute(query)
+        result = test.first()
+        return result[0], result[1]
 
-    result = test.first()
-    return result[0], result[1]
+    async def get_tasks_by_test_id(self, test_id: int):
+        query = select(Task).where(Task.test_id == test_id).order_by(Task.order_id)
+        async with self.session_maker() as session:
+            tasks = await session.execute(query)
 
+        return tasks.scalars().all()
 
-async def get_tasks_by_test_id(self, test_id: int):
-    query = select(Task).where(Task.test_id == test_id).order_by(Task.order_id)
-    async with self.session_maker() as session:
-        tasks = await session.execute(query)
+    async def add_classroom(self, author_id: int, title: str):
+        new_classroom = Classroom(id=str(uuid.uuid4()),
+                                  title=title,
+                                  tests=[],
+                                  author_id=author_id,
+                                  participants=[])
 
-    return tasks.scalars().all()
+        async with self.session_maker() as session:
+            session.add(new_classroom)
+            await session.commit()
+
+    async def get_classrooms_by_author_id(self, author_id: int) -> list[Classroom]:
+        query = select(Classroom).where(Classroom.author_id == author_id)
+        async with self.session_maker() as session:
+            classrooms = await session.execute(query)
+
+        return classrooms.scalars().all()
+
 
 # async def get_participations_by_test_id_and_tg_id(self, test_id, tg_id):
 #     query = select(TestParticipation).where(TestParticipation.test_id == test_id,

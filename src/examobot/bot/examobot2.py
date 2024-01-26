@@ -4,7 +4,7 @@ import sys
 from aiogram import types, Dispatcher, Bot
 from aiogram.filters import CommandStart, CommandObject
 
-from keyboards import get_start_keyboard
+from keyboards import *
 from keyboard_texts import *
 import logging
 import os
@@ -21,21 +21,23 @@ db_manager = DBManager()
 
 @dp.message(CommandStart())
 async def welcome_message(message: types.Message, command: CommandObject) -> None:
-
     if args := command.args:
         pass  # add to classroom
 
     await message.bot.send_message(message.from_user.id, "hey, choose your role",
-                                   reply_markup=get_start_keyboard())
+                                   reply_markup=get_main_menu_keyboard())
 
 
 @dp.callback_query()
 async def callback_inline(call: types.CallbackQuery) -> None:
-    if call.data == STUDENT_CALLBACK:
-        await call.bot.edit_message_text("you are student", call.from_user.id, call.message.message_id)
+    if call.data == AUTHORS_CLASSROOMS_CALLBACK:
+        authors_classrooms = await db_manager.get_classrooms_by_author_id(call.from_user.id)
+        await call.bot.edit_message_text("classrooms you have created", call.from_user.id, call.message.message_id,
+                                         reply_markup=get_classroom_keyboard(authors_classrooms))
 
-    elif call.data == TEACHER_CALLBACK:
-        await call.bot.edit_message_text("you are teacher", call.from_user.id, call.message.message_id)
+    elif call.data == CREATE_CLASSROOM_CALLBACK:
+        # ask for clsroom name
+        pass
 
 
 async def main() -> None:
