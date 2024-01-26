@@ -45,8 +45,6 @@ class User(Base):
     first_name: Mapped[str] = mapped_column(nullable=False)
     second_name: Mapped[str] = mapped_column(nullable=True, default=None)
     last_name: Mapped[str] = mapped_column(nullable=False)
-    grade_first_number: Mapped[int] = mapped_column(nullable=False, default=1)
-    grade_second_number: Mapped[int] = mapped_column(nullable=False, default=1)
 
     roles: Mapped[List["Role"]] = relationship(back_populates="user", cascade="all,delete")  # Parent
     answers: Mapped[List["Answer"]] = relationship(back_populates="user", cascade="all,delete")  # Parent
