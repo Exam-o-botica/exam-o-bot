@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import List, Optional
 
-from sqlalchemy import ForeignKey, Column, Table, LargeBinary
+from sqlalchemy import ForeignKey, Column, Table, LargeBinary,  BigInteger
 from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped
@@ -42,7 +42,7 @@ test_user_table = Table(
 class User(Base):
     __tablename__ = "users"
 
-    id: Mapped[int] = mapped_column(
+    id: Column = Column(BigInteger,
         primary_key=True, autoincrement=False, nullable=False, index=True)
     name: Mapped[str] = mapped_column(nullable=False)
     roles: Mapped[Role] = mapped_column(nullable=False, default=Role.STUDENT)
