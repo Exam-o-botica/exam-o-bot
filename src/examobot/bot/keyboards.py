@@ -8,6 +8,7 @@ def get_button(text, callback):
 
 
 BACK_TO_MAIN_MENU_BTN = get_button(BACK_TO_MAIN_MENU_TEXT, BACK_TO_MAIN_MENU_CALLBACK)
+GO_TO_MAIN_MENU_BTN = get_button(GO_TO_MAIN_MENU_TEXT, BACK_TO_MAIN_MENU_CALLBACK)
 
 
 # AUTHOR'S KEYBOARDS #
@@ -50,4 +51,11 @@ def get_respondent_buttons_():
 # COMMON KEYBOARDS #
 def get_main_menu_keyboard():
     inline_keyboard = get_authors_buttons_() + get_respondent_buttons_()
+    return types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
+
+
+def get_go_to_main_menu_keyboard():
+    inline_keyboard = [
+        [GO_TO_MAIN_MENU_BTN],
+    ]
     return types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
