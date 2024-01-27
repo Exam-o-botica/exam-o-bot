@@ -1,13 +1,12 @@
 import asyncio
-
-from sqlalchemy import select, insert, join
-
 import typing as tp
-from src.examobot.db.tables import Test, Task, Role, User, Classroom, TestStatus
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncEngine
 import uuid
 
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncEngine
+
 from src.examobot.db.tables import Base
+from src.examobot.db.tables import Test, Task, Role, User, Classroom, TestStatus
 
 DATABASE_URI = 'sqlite+aiosqlite:///mydatabase.db'
 
@@ -36,71 +35,38 @@ class DBManager:
                 await conn.run_sync(Base.metadata.create_all)
 
     # adding user
-    async def add_user(self, user_id: int, username: str, name: str, classroom_id: tp.Optional[str] = None,
-                       test_id: tp.Optional[str] = None):
-
-        if classroom_id and test_id:
-            raise AssertionError("EXPECTED EITHER CLASSROOM_ID OR TEST_ID, NOT BOTH")
-
-        if classroom_id:
-            role = Role.STUDENT
-            classroom = self.get_classroom_by_id(classroom_id)
-            if classroom:  # correctly found classroom
-                tests = self.get_available_tests_for_specific_classroom(classroom_id)
-                classrooms = [classroom]
-            else:
-                classrooms = []
-                tests = []
-
-        elif test_id:
-            role = Role.STUDENT
-            test = self.get_test_by_id(test_id)
-            tests = [test] if test else []
-            classrooms = []
-
-        else:
-            role = Role.AUTHOR
-            tests = []
-            classrooms = []
-
-        new_user = User(id=user_id, username=username, name=name, role=role, answers=[], tests=tests,
-                        classrooms=classrooms, created_classrooms=[], created_tests=[])
-
+    async def add_user(self, user_id: int, username: str, name: str):
+        new_user = User(user_id=user_id, username=username, name=name)
         async with self.session_maker() as session:
             session.add(new_user)
             await session.commit()
 
     async def check_if_user_exists(self, user_id: int) -> bool:
-        print('here1')
-        query = select(User).where(User.id == user_id)
-        print('here2')
+        query = select(User).where(User.id == user_id)  # suppress warning
         async with self.session_maker() as session:
             user = await session.execute(query)
             user = user.first()
-            print("user", user)
         return bool(user)
 
     async def get_user_by_id(self, user_id: int) -> User:
+        query = select(User).where(User.id == user_id)
         async with self.session_maker() as session:
-            user = session.query(User).filter(User.id == user_id).first()
-        return user
+            user = await session.execute(query)
+        return user.first()
 
-    async def get_classroom_by_id(self, classroom_id: str) -> Classroom:
-        async with self.session_maker() as session:
-            classroom = session.query(Classroom).filter(Classroom.id == classroom_id).first()
-        return classroom
+    # todo rewrite or delete
+    # async def get_classroom_by_id(self, classroom_id: str) -> Classroom:
+    #     async with self.session_maker() as session:
+    #         classroom = await session.query(Classroom).where(Classroom.id == classroom_id)
+    #     return classroom.first()
 
-    async def get_test_by_id(self, test_id: str) -> Test:
-        async with self.session_maker() as session:
-            test = session.query(Test).filter(Test.id == test_id).first()
-        return test
+    # todo rewrite or delete
+    # async def get_test_by_id(self, test_id: str) -> Test:
+    #     async with self.session_maker() as session:
+    #         test = await session.query(Test).where(Test.id == test_id)
+    #     return test.first()
 
-    async def add_user_to_classroom(self, classroom_id: str, user_id: int) -> None:
-        async with self.session_maker() as session:
-            classroom = session.query(Classroom).filter(Classroom.id == classroom_id).first()
-            classroom.participants.append(user_id)
-            await session.commit()
-
+    # todo rewrite
     async def get_available_tests_for_specific_classroom(self, classroom_id: str) -> list[Test]:
         query = select(Test).where(Test.classroom_id == classroom_id,
                                    Test.status_set_by_author == TestStatus.AVAILABLE)
@@ -111,13 +77,6 @@ class DBManager:
 
     # main menu authors queries
 
-    async def get_classrooms_by_author_id(self, author_id: int) -> list[Classroom]:
-        query = select(Classroom).where(Classroom.author_id == author_id)
-        async with self.session_maker() as session:
-            classrooms = await session.execute(query)
-
-        return classrooms.scalars().all()
-
     async def get_tests_by_author_id(self, author_id: int) -> list[Test]:
         query = select(Test).where(Test.author_id == author_id)
         async with self.session_maker() as session:
@@ -125,16 +84,37 @@ class DBManager:
 
         return tests.scalars().all()
 
+    async def add_test(self, author_id: int, title: str, time: int, deadline: int, attempts_number: int):
+        new_test = Test(id=str(uuid.uuid4()),
+                        title=title,
+                        time=time,
+                        deadline=deadline,
+                        attempts_number=attempts_number,
+                        author_id=author_id)
+        async with self.session_maker() as session:
+            session.add(new_test)
+            await session.commit()
+
+        return new_test
+
+    async def get_classrooms_by_author_id(self, author_id: int) -> list[Classroom]:
+        query = select(Classroom).where(Classroom.author_id == author_id)
+        async with self.session_maker() as session:
+            classrooms = await session.execute(query)
+
+        return classrooms.scalars().all()
+
     async def add_classroom(self, author_id: int, title: str):
         new_classroom = Classroom(id=str(uuid.uuid4()),
                                   title=title,
-                                  tests=[],
                                   author_id=author_id,
                                   participants=[])
 
         async with self.session_maker() as session:
             session.add(new_classroom)
             await session.commit()
+
+        return new_classroom
 
     # -------------------------
 

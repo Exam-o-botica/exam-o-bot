@@ -66,7 +66,7 @@ class User(Base):
         secondary=classroom_user_table, uselist=True, back_populates='participants')
 
     created_classrooms: Mapped[List["Classroom"]] = relationship(
-        back_populates="author",
+        back_populates="author",  # todo maybe we need uselist=True here, maybe not, who knows
         cascade="all,delete")  # Parent
 
     created_tests: Mapped[List["Test"]] = relationship(
@@ -81,8 +81,6 @@ class Classroom(Base):
 
     title: Mapped[str] = mapped_column(primary_key=False)
 
-    tests: Mapped[List["Test"]] = relationship(back_populates="classroom", cascade="all,delete")  # Parent
-
     author_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     author: Mapped[User] = relationship(back_populates="created_classrooms")  # Child
 
@@ -94,7 +92,7 @@ class Test(Base):
     __tablename__ = 'tests'
 
     id: Mapped[str] = mapped_column(primary_key=True, autoincrement=False)
-    title: Mapped[str] = mapped_column(nullable=False, unique=True, index=True)
+    title: Mapped[str] = mapped_column(nullable=False, index=True)
     time: Mapped[int] = mapped_column(nullable=False, default=-1)
 
     deadline: Mapped[int] = mapped_column(nullable=False, default=-1)
@@ -105,9 +103,6 @@ class Test(Base):
 
     author_id: Mapped[BigInteger] = mapped_column(ForeignKey("users.id"), nullable=False)
     author: Mapped[User] = relationship(back_populates="created_tests")  # Child
-
-    classroom_id: Mapped[int] = mapped_column(ForeignKey("classrooms.id"), nullable=False)
-    classroom: Mapped[Classroom] = relationship(back_populates="tests")  # Child
 
     participants: Mapped[List[User]] = relationship(
         secondary=test_user_table, uselist=True, back_populates='tests')
