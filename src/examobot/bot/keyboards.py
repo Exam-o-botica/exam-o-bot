@@ -22,8 +22,11 @@ def get_authors_buttons_():
 
 
 def get_classroom_keyboard(classrooms: list[Classroom]):
+    classrooms_list = []
+    for classroom in classrooms:
+        classrooms_list.append([get_button(classroom.title, f'{SPEC_CLASSROOM_CALLBACK}#{classroom.id}')])
     inline_keyboard = [
-        [get_button(classroom.title, f'{SPEC_CLASSROOM_CALLBACK}#{classroom.id}') for classroom in classrooms],
+        *classrooms_list,
         [get_button(CREATE_CLASSROOM_TEXT, CREATE_CLASSROOM_CALLBACK)],
         [BACK_TO_MAIN_MENU_BTN],
     ]
@@ -31,8 +34,11 @@ def get_classroom_keyboard(classrooms: list[Classroom]):
 
 
 def get_tests_keyboard(tests: list[Test]):
+    tests_list = []
+    for test in tests:
+        tests_list.append([get_button(test.title, f'{SPEC_TEST_CALLBACK}#{test.id}')])
     inline_keyboard = [
-        [get_button(test.title, f'{SPEC_TEST_CALLBACK}#{test.id}') for test in tests],
+        *tests_list,
         [get_button(CREATE_TEST_TEXT, CREATE_TEST_CALLBACK)],
         [BACK_TO_MAIN_MENU_BTN],
     ]

@@ -77,7 +77,7 @@ class User(Base):
         secondary=classroom_user_table, uselist=True, back_populates='participants')
 
     created_classrooms: Mapped[List["Classroom"]] = relationship(
-        back_populates="author",
+        back_populates="author",  # todo maybe we need uselist=True here, maybe not, who knows
         cascade="all,delete")  # Parent
 
     created_tests: Mapped[List["Test"]] = relationship(
@@ -92,6 +92,7 @@ class Classroom(Base):
     uuid: Mapped[str] = mapped_column(index=True, autoincrement=False)
 
     title: Mapped[str] = mapped_column(primary_key=False)
+
     author_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     author: Mapped[User] = relationship(back_populates="created_classrooms")  # Child
 
@@ -190,4 +191,3 @@ class ClassroomTestConnection(Base):
 
     classroom_id: Mapped[int] = mapped_column(ForeignKey("classrooms.id"))  # Child
     classroom: Mapped[Classroom] = relationship(back_populates="classroom_test_connections", uselist=False)
-
