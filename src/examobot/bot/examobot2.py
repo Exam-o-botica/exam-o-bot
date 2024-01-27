@@ -3,8 +3,11 @@ import logging
 import os
 import sys
 
-from aiogram import Dispatcher, Bot
+from aiogram import Dispatcher, Bot, F
 from aiogram.filters import CommandStart, CommandObject
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import StatesGroup, State
+from aiogram.types import Message
 
 from consts import *
 from keyboards import *
@@ -16,6 +19,16 @@ TOKEN = os.getenv("EXAM_O_BOT_TOKEN")
 # from src.main import db_manager
 dp = Dispatcher()
 db_manager = DBManager()
+
+
+class Form(StatesGroup):
+    test_title = State()
+    test_time = State()
+    test_deadline = State()
+    test_attempts_number = State()
+    test_link = State()
+    test_save = State()
+
 
 '''
 possible start links: 
@@ -105,7 +118,7 @@ def get_user_name(user: types.User) -> str:
 
 
 @dp.callback_query()
-async def callback_inline(call: types.CallbackQuery) -> None:
+async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
     # main menu authors options
 
     if call.data == BACK_TO_MAIN_MENU_CALLBACK:
@@ -122,15 +135,80 @@ async def callback_inline(call: types.CallbackQuery) -> None:
         await create_classroom(call)
 
     elif call.data == CREATE_TEST_CALLBACK:
-        await create_test(call)
+        await create_test(call, state)
 
 
-async def create_test(call: types.CallbackQuery) -> None:
-    await db_manager.add_test(title="title test", author_id=call.from_user.id,
-                              time=10, deadline=1000, attempts_number=1)
-    tests = await db_manager.get_tests_by_author_id(call.from_user.id)
-    await call.bot.edit_message_text("test created", call.from_user.id, call.message.message_id,
-                                     reply_markup=get_tests_keyboard(tests))
+async def create_test(call: types.CallbackQuery, state: FSMContext) -> None:
+    # await db_manager.add_test(
+    #     title="title test",
+    #     author_id=call.from_user.id,
+    #     time=10,
+    #     deadline=1000,
+    #     attempts_number=1
+    # )
+    # tests = await db_manager.get_tests_by_author_id(call.from_user.id)
+    await call.bot.edit_message_text(
+        "type test title",
+        call.from_user.id,
+        call.message.message_id,
+        # reply_markup=get_tests_keyboard(tests)
+    )
+    await state.set_state(Form.test_title)
+
+
+@dp.message(Form.test_title, F.text.regexp(r"^\s*\w+(\s+\w+)*\s*$"))
+async def type_test_title(message: Message, state: FSMContext):
+    await state.update_data(test_title=message.text.strip())
+    await state.set_state(Form.test_time)
+    await message.answer(text="type test duration in minutes")
+
+
+@dp.message(Form.test_time, F.text.regexp(r"^\s*\d+\s*$"))
+async def type_test_time(message: Message, state: FSMContext):
+    await state.update_data(test_time=message.text.strip())
+    await state.set_state(Form.test_deadline)
+    await message.answer(text="type test deadline")
+
+
+# TODO Make the regex suitable for form-links
+@dp.message(Form.test_deadline)
+async def type_test_deadline(message: Message, state: FSMContext):
+    await state.update_data(test_deadline=message.text.strip())
+    await state.set_state(Form.test_attempts_number)
+    await message.answer(text="type test number of attempts")
+
+
+@dp.message(Form.test_attempts_number, F.text.regexp(r"^\s*\d+\s*$"))
+async def type_test_attempts_number(message: Message, state: FSMContext):
+    await state.update_data(test_attempts_number=message.text.strip())
+    await state.set_state(Form.test_link)
+    await message.answer(text="type test link to Google form in format...")
+
+
+# TODO Make the regex suitable for form-links
+@dp.message(Form.test_link)
+async def type_test_attempts_number(message: Message, state: FSMContext):
+    await state.update_data(test_link=message.text.strip())
+    await state.set_state(Form.test_save)
+    await message.answer(text="thanks a lot")
+    await test_save(message, state)
+
+
+async def test_save(message: Message, state: FSMContext):
+    data = await state.get_data()
+    await db_manager.add_test(
+        title=data["test_title"],
+        author_id=message.from_user.id,
+        time=int(data["test_time"]),
+        deadline=int(data["test_deadline"]),
+        attempts_number=int(data["test_attempts_number"])
+    )
+    tests = await db_manager.get_tests_by_author_id(message.from_user.id)
+    await message.answer(
+        "test is saved",
+        reply_markup=get_tests_keyboard(tests)
+    )
+    await state.clear()
 
 
 async def create_classroom(call: types.CallbackQuery) -> None:
