@@ -1,1 +1,1 @@
-from examobot.bot.examobot import ExamOBot
+from examobot2 import *
