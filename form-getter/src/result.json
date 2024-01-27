@@ -1,0 +1,45 @@
+{
+    "metadata": {
+        "editorEmails": [
+            "fiodor.vanchugov@gmail.com"
+        ],
+        "count": 2,
+        "publishedUrl": "https://docs.google.com/forms/d/e/1FAIpQLScg_GFph0FF7-8ps6aO8sH7G5JNPebMtxutdU55osV3i-ZBgw/viewform",
+        "description": "Just for test of access rights",
+        "customClosedFormMessage": "",
+        "id": "1WlvO6r5-7CvkjCvL7y80yhV4UqtFqpgIln-xQmVatas",
+        "title": "Test form",
+        "confirmationMessage": ""
+    },
+    "count": 2,
+    "items": [
+        {
+            "isRequired": false,
+            "helpText": "",
+            "index": 0,
+            "hasOtherOption": false,
+            "id": 1909949591,
+            "type": "MULTIPLE_CHOICE",
+            "choices": [
+                "Вариант 1",
+                "Вариант 2",
+                "Вариант 3"
+            ],
+            "title": "Q 1",
+            "points": 0
+        },
+        {
+            "isRequired": false,
+            "leftLabel": "",
+            "helpText": "",
+            "upperBound": 10,
+            "index": 1,
+            "lowerBound": 1,
+            "id": 1401092575,
+            "type": "SCALE",
+            "title": "Шкалка",
+            "rightLabel": "",
+            "points": 0
+        }
+    ]
+}
