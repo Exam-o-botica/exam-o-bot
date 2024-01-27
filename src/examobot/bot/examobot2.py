@@ -32,11 +32,60 @@ possible start links:
 
 @dp.message(CommandStart())
 async def welcome_message(message: types.Message, command: CommandObject) -> None:
+    name = get_user_name(message.from_user)
     if args := command.args:
-        print(args)
+        if args.startswith("class"):
+            classroom_id = args.split("=")[1]
+            if not db_manager.check_if_user_exists(message.from_user.id):  # added new user to db + to classroom
+                await db_manager.add_user(message.from_user.id, message.from_user.username, name=name,
+                                          classroom_id=classroom_id)
+                await message.bot.send_message(message.from_user.id, START_TEXT + '\n added to classroom',
+                                               reply_markup=get_go_to_main_menu_keyboard())
+            else:  # added existing user to classroom
+                user = await db_manager.get_user_by_id(message.from_user.id)
+                if classroom_id in user.classrooms:  # check if user already in that classroom
+                    await message.bot.send_message(message.from_user.id, START_TEXT + '\n already in classroom',
+                                                   reply_markup=get_go_to_main_menu_keyboard())
+                else:  # added existing user to classroom
+                    user.classrooms.append(classroom_id)
+                    classroom = await db_manager.get_classroom_by_id(classroom_id)
+                    classroom.participants.append(user.id)
+                    await message.bot.send_message(message.from_user.id, START_TEXT + '\n added in classroom',
+                                                   reply_markup=get_go_to_main_menu_keyboard())
+        elif args.startswith("test"):
+            test_id = args.split("=")[1]
+            if not db_manager.check_if_user_exists(message.from_user.id):  # added new user to db + added test
+                await db_manager.add_user(message.from_user.id, message.from_user.username, name=name, test_id=test_id)
+                await message.bot.send_message(message.from_user.id, START_TEXT + '\n added new test',
+                                               reply_markup=get_go_to_main_menu_keyboard())
+            else:
+                user = await db_manager.get_user_by_id(message.from_user.id)
+                if test_id in user.tests:
+                    await message.bot.send_message(message.from_user.id, START_TEXT + '\n already in test',
+                                                   reply_markup=get_go_to_main_menu_keyboard())
+                else:
+                    await message.bot.send_message(message.from_user.id, START_TEXT + '\n added new test',
+                                                   reply_markup=get_go_to_main_menu_keyboard())
+        else:
+            raise ValueError("wrong start link")  # todo incorrect start link
 
-    await message.bot.send_message(message.from_user.id, MAIN_MENU_TEXT,
-                                   reply_markup=get_main_menu_keyboard())
+    else:
+        if await db_manager.check_if_user_exists(message.from_user.id):
+            await message.bot.send_message(message.from_user.id, START_TEXT,
+                                           reply_markup=get_go_to_main_menu_keyboard())
+        else:
+            await db_manager.add_user(message.from_user.id, message.from_user.username, name=name)
+            await message.bot.send_message(message.from_user.id, START_TEXT,
+                                           reply_markup=get_go_to_main_menu_keyboard())
+
+
+def get_user_name(user: types.User) -> str:
+    name = ""
+    if user.first_name:
+        name += user.first_name
+    if user.last_name:
+        name += f" {user.last_name}"
+    return name
 
 
 @dp.callback_query()
@@ -52,6 +101,10 @@ async def callback_inline(call: types.CallbackQuery) -> None:
 
     elif call.data == AUTHORS_TESTS_CALLBACK:
         await handle_authors_tests_query(call)
+
+    elif call.data == CREATE_CLASSROOM_CALLBACK:
+        pass
+        # await create_classroom
 
 
 

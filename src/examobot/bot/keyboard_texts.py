@@ -2,7 +2,7 @@ STUDENT_TEXT = 'student_text'
 STUDENT_CALLBACK = 'student_callback'
 
 BACK_TO_MAIN_MENU_TEXT = 'back to main menu'
-GO_TO_MAIN_MENU_TEST = 'go to menu'
+GO_TO_MAIN_MENU_TEXT = 'go to menu'
 BACK_TO_MAIN_MENU_CALLBACK = 'back_to_main_menu_callback'
 
 ### FOR AUTHORS ###

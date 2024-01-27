@@ -36,12 +36,6 @@ class DBManager:
                 await conn.run_sync(Base.metadata.create_all)
 
     # adding user
-
-    async def check_if_user_exists(self, user_id: int) -> bool:
-        async with self.session_maker() as session:
-            user = session.query(User).filter(User.id == user_id).first()
-        return bool(user)
-
     async def add_user(self, user_id: int, username: str, name: str, classroom_id: tp.Optional[str] = None,
                        test_id: tp.Optional[str] = None):
 
@@ -75,6 +69,21 @@ class DBManager:
         async with self.session_maker() as session:
             session.add(new_user)
             await session.commit()
+
+    async def check_if_user_exists(self, user_id: int) -> bool:
+        print('here1')
+        query = select(User).where(User.id == user_id)
+        print('here2')
+        async with self.session_maker() as session:
+            user = await session.execute(query)
+            user = user.first()
+            print("user", user)
+        return bool(user)
+
+    async def get_user_by_id(self, user_id: int) -> User:
+        async with self.session_maker() as session:
+            user = session.query(User).filter(User.id == user_id).first()
+        return user
 
     async def get_classroom_by_id(self, classroom_id: str) -> Classroom:
         async with self.session_maker() as session:
