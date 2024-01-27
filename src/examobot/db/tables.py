@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import List, Optional
 
-from sqlalchemy import ForeignKey, Column, Table, LargeBinary, BigInteger, BIGINT
+from sqlalchemy import ForeignKey, Column, Table, LargeBinary, BigInteger
 from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped
@@ -23,6 +23,11 @@ class AnswerStatus(Enum):
     UNCHECKED = 0
     CORRECT = 1
     INCORRECT = 2
+
+
+class AwaitStatusPrefix(Enum):
+    CLASSROOM_NAME = "CMN:"
+    TEST_NAME = "TTN:"
 
 
 class Base(AsyncAttrs, DeclarativeBase):
@@ -56,6 +61,8 @@ class User(Base):
     name: Mapped[str] = mapped_column(nullable=False)
 
     role: Mapped[Role] = mapped_column(nullable=False, default=Role.AUTHOR)
+
+    await_status: Mapped[str] = mapped_column(nullable=True, default=None)
 
     answers: Mapped[List["Answer"]] = relationship(back_populates="user", cascade="all,delete")  # Parent
 
