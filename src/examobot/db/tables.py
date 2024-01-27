@@ -86,6 +86,7 @@ class Test(Base):
     id: Mapped[str] = mapped_column(primary_key=True, autoincrement=False)
     title: Mapped[str] = mapped_column(nullable=False, unique=True, index=True)
     time: Mapped[int] = mapped_column(nullable=False, default=-1)
+    deadline: Mapped[int] = mapped_column(nullable=False, default=-1)
     attempts_number: Mapped[int] = mapped_column(nullable=False, default=1)
 
     author_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
