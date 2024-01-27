@@ -85,12 +85,14 @@ class DBManager:
         return tests.scalars().all()
 
     async def add_test(self, author_id: int, title: str, time: int, deadline: int, attempts_number: int):
-        new_test = Test(id=str(uuid.uuid4()),
-                        title=title,
-                        time=time,
-                        deadline=deadline,
-                        attempts_number=attempts_number,
-                        author_id=author_id)
+        new_test = Test(
+            uuid=str(uuid.uuid4()),
+            title=title,
+            time=time,
+            deadline=deadline,
+            attempts_number=attempts_number,
+            author_id=author_id,
+        )
         async with self.session_maker() as session:
             session.add(new_test)
             await session.commit()
@@ -105,10 +107,11 @@ class DBManager:
         return classrooms.scalars().all()
 
     async def add_classroom(self, author_id: int, title: str):
-        new_classroom = Classroom(id=str(uuid.uuid4()),
-                                  title=title,
-                                  author_id=author_id,
-                                  participants=[])
+        new_classroom = Classroom(
+            uuid=str(uuid.uuid4()),
+            title=title,
+            author_id=author_id,
+        )
 
         async with self.session_maker() as session:
             session.add(new_classroom)

@@ -106,11 +106,11 @@ class Test(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     uuid: Mapped[str] = mapped_column(index=True, autoincrement=False)
 
-    title: Mapped[str] = mapped_column(nullable=False, unique=True, index=True)
+    title: Mapped[str] = mapped_column(nullable=False, unique=False, index=True)
     time: Mapped[int] = mapped_column(nullable=False, default=-1)
     deadline: Mapped[int] = mapped_column(nullable=False, default=-1)
     attempts_number: Mapped[int] = mapped_column(nullable=False, default=1)
-    status_set_by_author: Mapped[TestStatus] = mapped_column(nullable=False, default=TestStatus.UNAVAILABLE)
+    status_set_by_author: Mapped[TestStatus] = mapped_column(nullable=False, default=TestStatus.AVAILABLE)
 
     author_id: Mapped[BigInteger] = mapped_column(ForeignKey("users.id"), nullable=False)
     author: Mapped[User] = relationship(back_populates="created_tests")  # Child
