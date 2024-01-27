@@ -70,9 +70,6 @@ class User(Base):
 
     answers: Mapped[List["Answer"]] = relationship(back_populates="user", cascade="all,delete")  # Parent
 
-    tests: Mapped[List['Test']] = relationship(
-        secondary=test_user_table, uselist=True, back_populates='participants')
-
     classrooms: Mapped[List['Classroom']] = relationship(
         secondary=classroom_user_table, uselist=True, back_populates='participants')
 
@@ -118,8 +115,6 @@ class Test(Base):
     author_id: Mapped[BigInteger] = mapped_column(ForeignKey("users.id"), nullable=False)
     author: Mapped[User] = relationship(back_populates="created_tests")  # Child
 
-    participants: Mapped[List[User]] = relationship(
-        secondary=test_user_table, uselist=True, back_populates='tests')
     tasks: Mapped[List["Task"]] = relationship(back_populates="test", cascade="all,delete")  # Parent
     classroom_test_connections: Mapped[List["ClassroomTestConnection"]] = (
         relationship(back_populates="test", cascade="all,delete", uselist=True))  # Parent
