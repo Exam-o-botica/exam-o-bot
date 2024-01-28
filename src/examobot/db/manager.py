@@ -49,13 +49,14 @@ class DBManager:
             user = user.first()
         return bool(user)
 
-    async def get_user_by_id(self, user_id: int) -> User:
-        query = select(User).where(User.id == user_id)
-        async with self.session_maker() as session:
-            user = await session.execute(query)
-        return user.first()
-
     # CLASSROOMS AND TESTS
+
+    async def get_test_by_id(self, test_id: int) -> Test:
+        query = select(Test).where(Test.id == test_id)
+        async with self.session_maker() as session:
+            result = await session.execute(query)
+            test = result.scalars().first()
+        return test
 
     async def get_tests_by_author_id(self, author_id: int) -> list[Test]:
         query = select(Test).where(Test.author_id == author_id)
