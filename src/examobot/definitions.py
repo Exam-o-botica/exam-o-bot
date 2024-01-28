@@ -16,6 +16,11 @@ DEFAULT_DB_FILE = os.path.join(DB_DIR, "examobot_db.db")
 TOKEN = os.getenv("EXAM_O_BOT_TOKEN")
 DEFAULT_USER_AGENT = "Mozilla/5.0 (Windows NT 6.1; rv:84.0) Gecko/20100101 Firefox/84.0"
 
+# For Google Script API
+FORM_HANDLERS_DIR = os.path.join(ROOT_DIR, "form_handlers")
+GOOGLE_CONFIG_FILE = os.path.join(FORM_HANDLERS_DIR, "google_config.json")
+GOOGLE_SCRIPT_ID = os.getenv("GOOGLE_SCRIPT_ID")
+
 
 # For localization
 class SupportedLanguages(enum.Enum):
