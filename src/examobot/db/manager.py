@@ -1,12 +1,11 @@
 import asyncio
-import typing as tp
 import uuid
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncEngine
 
-from src.examobot.db.tables import Base
-from src.examobot.db.tables import Test, Task, Role, User, Classroom, TestStatus
+from src.examobot.db.tables import Test, Task, User, Classroom, Base, UserClassroomParticipation, \
+    UserTestParticipation
 
 DATABASE_URI = 'sqlite+aiosqlite:///mydatabase.db'
 
@@ -34,15 +33,17 @@ class DBManager:
             async with engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
 
-    # adding user
-    async def add_user(self, user_id: int, username: str, name: str):
-        new_user = User(user_id=user_id, username=username, name=name)
+    # USERS
+
+    async def add_user(self, user_id: int, username: str, name: str) -> User:
+        new_user = User(id=user_id, username=username, name=name)
         async with self.session_maker() as session:
             session.add(new_user)
             await session.commit()
+        return new_user
 
     async def check_if_user_exists(self, user_id: int) -> bool:
-        query = select(User).where(User.id == user_id)  # suppress warning
+        query = select(User).where(User.id == user_id)  # that's correct
         async with self.session_maker() as session:
             user = await session.execute(query)
             user = user.first()
@@ -54,28 +55,7 @@ class DBManager:
             user = await session.execute(query)
         return user.first()
 
-    # todo rewrite or delete
-    # async def get_classroom_by_id(self, classroom_id: str) -> Classroom:
-    #     async with self.session_maker() as session:
-    #         classroom = await session.query(Classroom).where(Classroom.id == classroom_id)
-    #     return classroom.first()
-
-    # todo rewrite or delete
-    # async def get_test_by_id(self, test_id: str) -> Test:
-    #     async with self.session_maker() as session:
-    #         test = await session.query(Test).where(Test.id == test_id)
-    #     return test.first()
-
-    # todo rewrite
-    async def get_available_tests_for_specific_classroom(self, classroom_id: str) -> list[Test]:
-        query = select(Test).where(Test.classroom_id == classroom_id,
-                                   Test.status_set_by_author == TestStatus.AVAILABLE)
-        async with self.session_maker() as session:
-            tests = await session.execute(query)
-
-        return tests.scalars().all()
-
-    # main menu authors queries
+    # CLASSROOMS AND TESTS
 
     async def get_tests_by_author_id(self, author_id: int) -> list[Test]:
         query = select(Test).where(Test.author_id == author_id)
@@ -99,12 +79,52 @@ class DBManager:
 
         return new_test
 
+    async def get_classroom_by_uuid(self, classroom_uuid: str) -> Classroom:
+        query = select(Classroom).where(Classroom.uuid == classroom_uuid)
+        async with self.session_maker() as session:
+            result = await session.execute(query)
+            classroom = result.scalars().first()
+        return classroom
+
+    async def get_test_by_uuid(self, test_uuid: str) -> Test:
+        query = select(Test).where(Test.uuid == test_uuid)
+        async with self.session_maker() as session:
+            result = await session.execute(query)
+            test = result.scalars().first()
+        return test
+
     async def get_classrooms_by_author_id(self, author_id: int) -> list[Classroom]:
         query = select(Classroom).where(Classroom.author_id == author_id)
         async with self.session_maker() as session:
             classrooms = await session.execute(query)
 
         return classrooms.scalars().all()
+
+    async def check_if_user_in_test(self, test_id: int, user_id: int) -> bool:
+        query = select(UserTestParticipation).where(UserTestParticipation.test_id == test_id and
+                                                    UserTestParticipation.user_id == user_id)
+        async with self.session_maker() as session:
+            result = await session.execute(query)
+        return bool(result.first())
+
+    async def check_if_user_in_classroom(self, classroom_id: int, user_id: int) -> bool:
+        query = select(UserClassroomParticipation).where(UserClassroomParticipation.classroom_id == classroom_id and
+                                                         UserClassroomParticipation.user_id == user_id)
+        async with self.session_maker() as session:
+            result = await session.execute(query)
+        return bool(result.first())
+
+    async def add_user_to_test_participants(self, test_id: int, user_id: int):
+        async with self.session_maker() as session:
+            new_user_test = UserTestParticipation(user_id=user_id, test_id=test_id)
+            session.add(new_user_test)
+            await session.commit()
+
+    async def add_user_to_classroom(self, classroom_id: int, user_id: int):
+        async with self.session_maker() as session:
+            new_user_classroom = UserClassroomParticipation(user_id=user_id, classroom_id=classroom_id)
+            session.add(new_user_classroom)
+            await session.commit()
 
     async def add_classroom(self, author_id: int, title: str):
         new_classroom = Classroom(
@@ -119,16 +139,6 @@ class DBManager:
 
         return new_classroom
 
-    # -------------------------
-
-    async def get_test_and_author_by_test_title(self, title: str):
-        query = select(Test, User).join(User).where(Test.title == title)
-        async with self.session_maker() as session:
-            test = await session.execute(query)
-
-        result = test.first()
-        return result[0], result[1]
-
     async def get_tasks_by_test_id(self, test_id: int):
         query = select(Task).where(Task.test_id == test_id).order_by(Task.order_id)
         async with self.session_maker() as session:
@@ -136,45 +146,6 @@ class DBManager:
 
         return tasks.scalars().all()
 
-    #
-    # async def get_test_titles(self):
-    #     query = select(Test.title)
-    #     async with self.session_maker() as session:
-    #         tests = await session.execute(query)
-    #
-    #     return tests.all()
-    #
-    # async def get_test_and_author_by_test_title(self, title: str):
-    #     query = select(Test, User).join(User).where(Test.title == title)
-    #     async with self.session_maker() as session:
-    #         test = await session.execute(query)
-    #
-    #     result = test.first()
-    #     return result[0], result[1]
-    #
-    # async def get_tasks_by_test_id(self, test_id: int):
-    #     query = select(Task).where(Task.test_id == test_id).order_by(Task.order_id)
-    #     async with self.session_maker() as session:
-    #         tasks = await session.execute(query)
-    #
-    #     return tasks.scalars().all()
-    #
-    # return tests.all()
-
-# async def get_participations_by_test_id_and_tg_id(self, test_id, tg_id):
-#     query = select(TestParticipation).where(TestParticipation.test_id == test_id,
-#                                             TestParticipation.user_tg_id == tg_id)
-#     async with self.session_maker() as session:
-#         participations = await session.execute(query)
-#
-#     return participations.scalars().all()
-#
-
-# async def add_participation(self, test_id, tg_id, score=-1):
-#     stmt = insert(TestParticipation).values(user_tg_id=tg_id, test_id=test_id, score=score)
-#     async with self.session_maker() as session:
-#         await session.execute(stmt)
-#         await session.commit()
 #
 # async def initial_add(self):
 #     async with self.session_maker() as session:

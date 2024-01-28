@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+import re
 import sys
 
 from aiogram import Dispatcher, Bot, F
@@ -40,71 +41,66 @@ possible start links:
 '''
 
 
+def valid_link(link, type):
+    regex = re.compile(f'{type}=' + '[a-f0-9]{8}-?[a-f0-9]{4}-?4[a-f0-9]{3}-?[89ab][a-f0-9]{3}-?[a-f0-9]{12}\Z', re.I)
+    match = regex.match(link)
+    return bool(match)
+
+
 @dp.message(CommandStart())
 async def welcome_message(message: types.Message, command: CommandObject) -> None:
     name = get_user_name(message.from_user)
-    exists = db_manager.check_if_user_exists(user_id=message.from_user.id)
+    exists = await db_manager.check_if_user_exists(user_id=message.from_user.id)
     args = command.args
-    if not exists and args:
-        return  # todo add user to db and (to classroom or just test)
 
-    elif not exists and not args:
+    if not exists:
         await db_manager.add_user(message.from_user.id, message.from_user.username, name=name)
-        await message.bot.send_message(message.from_user.id, START_TEXT,
-                                       reply_markup=get_go_to_main_menu_keyboard())
+        await message.bot.send_message(message.from_user.id, START_TEXT)
 
-    elif exists and not args:
-        await message.bot.send_message(message.from_user.id, START_TEXT,
-                                       reply_markup=get_go_to_main_menu_keyboard())
+    if args:
+        if valid_link(args, "class"):
+            classroom_uuid = args.split("=")[1]
+            classroom = await db_manager.get_classroom_by_uuid(classroom_uuid)
 
-    elif exists and args:
-        return  # todo add to new class room or add new avaliable test
+            if not classroom:
+                await message.bot.send_message(message.from_user.id, "this classroom doesn't exist",
+                                               reply_markup=get_go_to_main_menu_keyboard())
+                return
 
+            if await db_manager.check_if_user_in_classroom(classroom.id,
+                                                           message.from_user.id):  # todo maybe we wanna consider that user is not author of this classroom
+                await message.bot.send_message(message.from_user.id, "you are already joined this classroom",
+                                               reply_markup=get_go_to_main_menu_keyboard())
+                return
 
-    # if args := command.args:
-    #     pass
-    # if args.startswith("class"):
-    #     classroom_id = args.split("=")[1]
-    #     if not db_manager.check_if_user_exists(message.from_user.id):  # added new user to db + to classroom
-    #         await db_manager.add_user(message.from_user.id, message.from_user.username, name=name,
-    #                                   classroom_id=classroom_id)
-    #         await message.bot.send_message(message.from_user.id, START_TEXT + '\n added to classroom',
-    #                                        reply_markup=get_go_to_main_menu_keyboard())
-    #     else:  # added existing user to classroom
-    #         user = await db_manager.get_user_by_id(message.from_user.id)
-    #         if classroom_id in user.classrooms:  # check if user already in that classroom
-    #             await message.bot.send_message(message.from_user.id, START_TEXT + '\n already in classroom',
-    #                                            reply_markup=get_go_to_main_menu_keyboard())
-    #         else:  # added existing user to classroom
-    #             user.classrooms.append(classroom_id)
-    #             classroom = await db_manager.get_classroom_by_id(classroom_id)
-    #             classroom.participants.append(user.id)
-    #             await message.bot.send_message(message.from_user.id, START_TEXT + '\n added in classroom',
-    #                                            reply_markup=get_go_to_main_menu_keyboard())
-    # elif args.startswith("test"):
-    #     test_id = args.split("=")[1]
-    #     if not db_manager.check_if_user_exists(message.from_user.id):  # added new user to db + added test
-    #         await db_manager.add_user(message.from_user.id, message.from_user.username, name=name, test_id=test_id)
-    #         await message.bot.send_message(message.from_user.id, START_TEXT + '\n added new test',
-    #                                        reply_markup=get_go_to_main_menu_keyboard())
-    #     else:
-    #         user = await db_manager.get_user_by_id(message.from_user.id)
-    #         if test_id in user.tests:
-    #             await message.bot.send_message(message.from_user.id, START_TEXT + '\n already in test',
-    #                                            reply_markup=get_go_to_main_menu_keyboard())
-    #         else:
-    #             await message.bot.send_message(message.from_user.id, START_TEXT + '\n added new test',
-    #                                            reply_markup=get_go_to_main_menu_keyboard())
-    # else:
-    #     raise ValueError("wrong start link")  # todo incorrect start link
-
-    else:
-        if await db_manager.check_if_user_exists(message.from_user.id):
-            await message.bot.send_message(message.from_user.id, START_TEXT,
+            await db_manager.add_user_to_classroom(classroom.id,
+                                                   message.from_user.id)
+            await message.bot.send_message(message.from_user.id,
+                                           SUCCESSFULLY_ADDED_TO_CLASSROOM.format(classroom.title),
                                            reply_markup=get_go_to_main_menu_keyboard())
+
+        elif valid_link(args, "test"):
+            test_uuid = args.split("=")[1]
+            test = await db_manager.get_test_by_uuid(test_uuid)
+            if not test:
+                await message.bot.send_message(message.from_user.id, "link is invalid, test doesn't exist",
+                                               reply_markup=get_go_to_main_menu_keyboard())
+                return
+
+            if await db_manager.check_if_user_in_test(test.id,
+                                                      message.from_user.id):  # todo maybe we wanna consider that user is not author of this test
+                await message.bot.send_message(message.from_user.id, "you are already able to pass this test",
+                                               reply_markup=get_go_to_main_menu_keyboard())
+                return
+
+            await db_manager.add_user_to_test_participants(test.id, message.from_user.id)
+
+            await message.bot.send_message(message.from_user.id,
+                                           SUCCESSFULLY_ADDED_TO_TESTS.format(test.title),
+                                           reply_markup=get_go_to_main_menu_keyboard())
+
         else:
-            await db_manager.add_user(message.from_user.id, message.from_user.username, name=name)
-            await message.bot.send_message(message.from_user.id, START_TEXT,
+            await message.bot.send_message(message.from_user.id, "link is invalid",
                                            reply_markup=get_go_to_main_menu_keyboard())
 
 
