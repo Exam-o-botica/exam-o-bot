@@ -181,6 +181,14 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
     elif SPEC_SHARE_TEST_LINK_TO_CLASSROOM.has_that_callback(call.data):
         await handle_spec_share_test_link_to_classroom_query(call)
 
+    elif call.data.startswith(SPEC_CREATED_CLASSROOM_CALLBACK):
+        classroom_id = get_test_id_or_classroom_id_from_callback(call.data)
+        classroom = await db_manager.get_classroom_by_id(classroom_id)
+        await call.bot.edit_message_text(f"classroom title: {classroom.title}\n"
+                                         f"link: {generate_link(Entity.CLASSROOM, classroom.uuid)}",
+                                         call.from_user.id, call.message.message_id,
+                                         reply_markup=get_spec_classroom_keyboard(classroom))
+
     # CURRENT TESTS
 
     # elif call.data.startswith(CURRENT_TESTS_CALLBACK):

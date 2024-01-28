@@ -48,6 +48,9 @@ SPEC_CREATED_CLASSROOM = Button(name='SPEC_CREATED_CLASSROOM', text='specific cl
 
 CREATE_CLASSROOM = Button(name='CREATE_CLASSROOM', text='add classroom')
 
+DELETE_CLASSROOM_TEXT = 'delete classroom'
+DELETE_CLASSROOM_CALLBACK = 'delete_classroom_callback'
+
 # created Tests
 
 AUTHORS_TESTS = Button(name='AUTHORS_TESTS', text='created tests')
