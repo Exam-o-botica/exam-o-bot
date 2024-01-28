@@ -90,6 +90,10 @@ async def welcome_message(message: types.Message, command: CommandObject) -> Non
             await message.bot.send_message(message.from_user.id, "link is invalid",
                                            reply_markup=get_go_to_main_menu_keyboard())
 
+    else:
+        await message.bot.send_message(message.from_user.id, MAIN_MENU_TEXT,
+                                       reply_markup=get_main_menu_keyboard())
+
 
 def get_user_name(user: types.User) -> str:
     name = ""
@@ -111,14 +115,42 @@ async def callback_inline(call: types.CallbackQuery) -> None:
     elif call.data == AUTHORS_CLASSROOMS_CALLBACK:
         await handle_authors_classrooms_query(call)
 
-    elif call.data == AUTHORS_TESTS_CALLBACK:
-        await handle_authors_tests_query(call)
-
     elif call.data == CREATE_CLASSROOM_CALLBACK:
         await create_classroom(call)
 
+    # TESTS
+
     elif call.data == CREATE_TEST_CALLBACK:
         await create_test(call)
+
+    elif call.data == AUTHORS_TESTS_CALLBACK:
+        await handle_authors_tests_query(call)
+
+    elif SPEC_CREATED_TEST_CALLBACK in call.data:
+        await handle_spec_created_test_query(call)
+
+
+def get_spec_test_info_message(test: Test) -> str:
+    msg = f"""<b>Test title:</b> {test.title}
+    <b>Test duration:</b> {test.time} min
+    <b>Test deadline:</b> {test.deadline}
+    <b>Test attempts number:</b> {test.attempts_number}
+    <b>Test status:</b> {test.status_set_by_author}
+    <b>Test link:</b> {test.link}"""
+    return msg
+
+
+def get_test_id_or_classroom_id_from_callback(callback: str) -> int:
+    return int(callback.split("#")[1])
+
+
+async def handle_spec_created_test_query(call: types.CallbackQuery) -> None:
+    test_id = get_test_id_or_classroom_id_from_callback(call.data)
+    test = await db_manager.get_test_by_id(test_id)
+    await call.bot.edit_message_text(get_spec_test_info_message(test),
+                                     call.from_user.id, call.message.message_id,
+                                     reply_markup=get_spec_created_test_keyboard(test),
+                                     parse_mode="HTML")
 
 
 async def create_test(call: types.CallbackQuery) -> None:
@@ -126,14 +158,14 @@ async def create_test(call: types.CallbackQuery) -> None:
                               time=10, deadline=1000, attempts_number=1)
     tests = await db_manager.get_tests_by_author_id(call.from_user.id)
     await call.bot.edit_message_text("test created", call.from_user.id, call.message.message_id,
-                                     reply_markup=get_tests_keyboard(tests))
+                                     reply_markup=get_created_tests_keyboard(tests))
 
 
 async def create_classroom(call: types.CallbackQuery) -> None:
     await db_manager.add_classroom(title="title cls", author_id=call.from_user.id)
     classrooms = await db_manager.get_classrooms_by_author_id(call.from_user.id)
     await call.bot.edit_message_text("classroom created", call.from_user.id, call.message.message_id,
-                                     reply_markup=get_classroom_keyboard(classrooms))
+                                     reply_markup=get_created_classrooms_keyboard(classrooms))
 
 
 async def handle_authors_classrooms_query(call: types.CallbackQuery) -> None:
@@ -143,7 +175,7 @@ async def handle_authors_classrooms_query(call: types.CallbackQuery) -> None:
     else:
         text = "classrooms you have created"
     await call.bot.edit_message_text(text, call.from_user.id, call.message.message_id,
-                                     reply_markup=get_classroom_keyboard(authors_classrooms))
+                                     reply_markup=get_created_classrooms_keyboard(authors_classrooms))
 
 
 async def handle_authors_tests_query(call: types.CallbackQuery) -> None:
@@ -153,7 +185,7 @@ async def handle_authors_tests_query(call: types.CallbackQuery) -> None:
     else:
         text = "tests you have created"
     await call.bot.edit_message_text(text, call.from_user.id, call.message.message_id,
-                                     reply_markup=get_tests_keyboard(authors_tests))
+                                     reply_markup=get_created_tests_keyboard(authors_tests))
 
 
 async def main() -> None:

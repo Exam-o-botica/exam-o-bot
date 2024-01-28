@@ -21,10 +21,10 @@ def get_authors_buttons_():
     return inline_keyboard
 
 
-def get_classroom_keyboard(classrooms: list[Classroom]):
+def get_created_classrooms_keyboard(classrooms: list[Classroom]):
     classrooms_list = []
     for classroom in classrooms:
-        classrooms_list.append([get_button(classroom.title, f'{SPEC_CLASSROOM_CALLBACK}#{classroom.id}')])
+        classrooms_list.append([get_button(classroom.title, f'{SPEC_CREATED_CLASSROOM_CALLBACK}#{classroom.id}')])
     inline_keyboard = [
         *classrooms_list,
         [get_button(CREATE_CLASSROOM_TEXT, CREATE_CLASSROOM_CALLBACK)],
@@ -33,10 +33,18 @@ def get_classroom_keyboard(classrooms: list[Classroom]):
     return types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
 
 
-def get_tests_keyboard(tests: list[Test]):
+def get_emoji_test_status(status: TestStatus):
+    if status == TestStatus.AVAILABLE:
+        return '🟢'
+    else:
+        return '🔴'
+
+
+def get_created_tests_keyboard(tests: list[Test]):
     tests_list = []
     for test in tests:
-        tests_list.append([get_button(test.title, f'{SPEC_TEST_CALLBACK}#{test.id}')])
+        tests_list.append([get_button(f"{test.title} {get_emoji_test_status(test.status_set_by_author)}",
+                                      f'{SPEC_CREATED_TEST_CALLBACK}#{test.id}')])
     inline_keyboard = [
         *tests_list,
         [get_button(CREATE_TEST_TEXT, CREATE_TEST_CALLBACK)],
@@ -44,6 +52,15 @@ def get_tests_keyboard(tests: list[Test]):
     ]
     return types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
 
+
+def get_spec_created_test_keyboard(test: Test):
+    inline_keyboard = [
+        [get_button(CLOSE_TEST_TEXT, f"{CLOSE_TEST_CALLBACK}#{test.id}")],
+        [get_button(REFRESH_TEST_DATA_TEXT, f"{REFRESH_TEST_DATA_CALLBACK}#{test.id}")],
+        [get_button(EDIT_TEST_TEXT, f"{EDIT_TEST_CALLBACK}#{test.id}")],
+        [BACK_TO_MAIN_MENU_BTN],
+    ]
+    return types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
 
 # RESPONDENT'S KEYBOARDS #
 
