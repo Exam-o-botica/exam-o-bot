@@ -48,14 +48,18 @@ class FormExtractor:
 
     @staticmethod
     def get_json(service, script_id, form_url):
-        body = {
-            "function": "main",
-            "devMode": True,
-            "parameters": form_url
-        }
-        resp = service.scripts().run(scriptId=script_id, body=body).execute()
-        result_json = json.dumps(resp['response']['result'], ensure_ascii=False, indent=4)
-        return result_json
+        try:
+            body = {
+                "function": "main",
+                "devMode": True,
+                "parameters": form_url
+            }
+            resp = service.scripts().run(scriptId=script_id, body=body).execute()
+            result_json = json.dumps(resp['response']['result'], ensure_ascii=False, indent=4)
+            return result_json
+        except Exception as e:
+            pprint(f'Script failure: {e}')
+            return None
 
     @staticmethod
     async def extract(form_url: str) -> Optional[str]:
@@ -66,6 +70,5 @@ class FormExtractor:
             service = FormExtractor.login(config)
             meta_data = FormExtractor.get_json(service, GOOGLE_SCRIPT_ID, form_url)
             return meta_data
-
         except (errors.HttpError,):
             return None

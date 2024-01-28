@@ -3,6 +3,9 @@ import logging
 import os
 import re
 import sys
+import time
+from datetime import datetime
+from pprint import pprint
 
 from aiogram import Dispatcher, Bot, F
 from aiogram.filters import CommandStart, CommandObject
@@ -12,8 +15,8 @@ from aiogram.types import Message
 
 from consts import *
 from keyboards import *
-from src.examobot.form_handlers import *
 from src.examobot.db.manager import DBManager
+from src.examobot.form_handlers import *
 
 # from src.main import bot, dp
 
@@ -167,57 +170,75 @@ async def handle_spec_created_test_query(call: types.CallbackQuery) -> None:
                                      parse_mode="HTML")
 
 
-
 async def create_test(call: types.CallbackQuery, state: FSMContext) -> None:
-    # await db_manager.add_test(
-    #     title="title test",
-    #     author_id=call.from_user.id,
-    #     time=10,
-    #     deadline=1000,
-    #     attempts_number=1
-    # )
-    # tests = await db_manager.get_tests_by_author_id(call.from_user.id)
     await call.bot.edit_message_text(
         "type test title",
         call.from_user.id,
         call.message.message_id,
-        # reply_markup=get_tests_keyboard(tests)
     )
     await state.set_state(Form.test_title)
 
 
-@dp.message(Form.test_title, F.text.regexp(r"^\s*\w+(\s+\w+)*\s*$"))
+@dp.message(Form.test_title)
 async def type_test_title(message: Message, state: FSMContext):
+    if not re.fullmatch(r"(\w|\d)+(\s+(\w|\d)+)*", message.text.strip()):
+        await message.answer(text="title may contain letters, digits and spaces. please, rewrite")
+        return
+
     await state.update_data(test_title=message.text.strip())
     await state.set_state(Form.test_time)
     await message.answer(text="type test duration in minutes")
 
 
-@dp.message(Form.test_time, F.text.regexp(r"^\s*\d+\s*$"))
+@dp.message(Form.test_time)
 async def type_test_time(message: Message, state: FSMContext):
-    await state.update_data(test_time=message.text.strip())
+    if not re.fullmatch(r"\d+", message.text.strip()):
+        await message.answer(text="duration may contain only digits. please, rewrite")
+        return
+
+    await state.update_data(test_time=int(message.text.strip()))
     await state.set_state(Form.test_deadline)
-    await message.answer(text="type test deadline")
+    await message.answer(text="type test deadline in format 'DD.MM.YYYY hh:mm'")
 
 
 # TODO Make the regex suitable for form-links
 @dp.message(Form.test_deadline)
 async def type_test_deadline(message: Message, state: FSMContext):
-    await state.update_data(test_deadline=message.text.strip())
+    if not re.fullmatch(r"\d\d\.\d\d\.\d\d\d\d\s\d\d:\d\d", message.text.strip()):
+        await message.answer(text="please, follow the format: 'DD.MM.YYYY hh:mm'")
+        return
+
+    try:
+        timestamp = int(
+            time.mktime(
+                datetime.strptime(message.text.strip(), "%d.%m.%Y %H:%M").timetuple()))
+    except Exception as e:
+        pprint(f"Deadline error: {e}")
+        await message.answer(text="seems like there is some error with the date. please, retry")
+        return
+
+    await state.update_data(test_deadline_ts=timestamp)
     await state.set_state(Form.test_attempts_number)
     await message.answer(text="type test number of attempts")
 
 
-@dp.message(Form.test_attempts_number, F.text.regexp(r"^\s*\d+\s*$"))
+@dp.message(Form.test_attempts_number)
 async def type_test_attempts_number(message: Message, state: FSMContext):
-    await state.update_data(test_attempts_number=message.text.strip())
+    if not re.fullmatch(r"\d+", message.text.strip()):
+        await message.answer(text="number of attempts may contain only digits. please, rewrite")
+        return
+
+    await state.update_data(test_attempts_number=int(message.text.strip()))
     await state.set_state(Form.test_link)
     await message.answer(text="type test link to Google form in format...")
 
 
-# TODO Make the regex suitable for form-links
 @dp.message(Form.test_link)
-async def type_test_attempts_number(message: Message, state: FSMContext):
+async def type_test_link(message: Message, state: FSMContext):
+    if not re.fullmatch(r"(http(s)?://)?docs\.google\.com/forms/d/[a-zA-Z\d-]+/edit", message.text.strip()):
+        await message.answer(text="please, send a correct url of the form")
+        return
+
     await state.update_data(test_link=message.text.strip())
     await state.set_state(Form.test_save)
     await message.answer(text="thanks a lot")
@@ -248,9 +269,9 @@ async def test_save(message: Message, state: FSMContext):
         await db_manager.add_test(
             title=data["test_title"],
             author_id=message.from_user.id,
-            time=int(data["test_time"]),
-            deadline=int(data["test_deadline"]),
-            attempts_number=int(data["test_attempts_number"]),
+            time=data["test_time"],
+            deadline=data["test_deadline_ts"],
+            attempts_number=data["test_attempts_number"],
             link=data["test_link"],
             meta_data=meta_data,
         )
