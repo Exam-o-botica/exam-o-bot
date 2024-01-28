@@ -34,8 +34,8 @@ def get_created_classrooms_keyboard(classrooms: list[Classroom]):
 
 def get_spec_classroom_keyboard(classroom: Classroom):
     inline_keyboard = [
-        [get_button(DELETE_CLASSROOM_TEXT, f"{DELETE_CLASSROOM_CALLBACK}#{classroom.id}")],
-        [get_button(GO_TO_PREVIOUS_MENU_TEXT, AUTHORS_CLASSROOMS_CALLBACK)],
+        [DELETE_CLASSROOM.get_button(parameters=[classroom.id])],
+        [AUTHORS_CLASSROOMS.get_button(new_text=GO_TO_PREVIOUS_MENU_TEXT)],
     ]
     return types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
 
