@@ -145,6 +145,13 @@ class DBManager:
 
         return new_classroom
 
+    async def get_users_in_classroom(self, classroom_id: int):
+        query = select(User).join(UserClassroomParticipation).where(
+            UserClassroomParticipation.classroom_id == classroom_id)
+        async with self.session_maker() as session:
+            users = await session.execute(query)
+        return users.scalars().all()
+
     # CURRENT TESTS
 
     async def get_current_ended_or_with_no_attempts_tests_by_user_id(self, user_id: int):
