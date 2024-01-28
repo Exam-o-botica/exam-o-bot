@@ -18,6 +18,9 @@ SPEC_CREATED_CLASSROOM_CALLBACK = 'SPEC_CREATED_CLASSROOM_CALLBACK'  # spec = go
 CREATE_CLASSROOM_TEXT = 'add classroom'
 CREATE_CLASSROOM_CALLBACK = 'create_classroom_callback'
 
+DELETE_CLASSROOM_TEXT = 'delete classroom'
+DELETE_CLASSROOM_CALLBACK = 'delete_classroom_callback'
+
 # created Tests
 
 AUTHORS_TESTS_TEXT = 'created tests'
@@ -43,7 +46,7 @@ SHARE_TEST_LINK_CALLBACK = 'share_test_link_callback'
 SHARE_TEST_LINK_TO_CLASSROOM_TEXT = 'send test to classroom'
 SHARE_TEST_LINK_TO_CLASSROOM_CALLBACK = 'share_test_link_to_classroom_callback'
 
-SPEC_SHARE_TEST_LINK_TO_CLASSROOM_CALLBACK = 'SPEC_SHARE_TEST_LINK_TO_CLASSROOM_CALLBACK'
+SPEC_SHARE_TEST_LINK_TO_CLASSROOM_CALLBACK = 'spec_share_test_link_to_classroom_callback'
 
 # current tests
 
@@ -57,4 +60,3 @@ CURRENT_ENDED_OR_WITH_NO_ATTEMPTS_TESTS_CALLBACK = 'get_current_ended_or_with_no
 
 CURRENT_AVAILABLE_TEST_WITH_ATTEMPTS_TEXT = 'avaliable tests'
 CURRENT_AVAILABLE_TEST_WITH_ATTEMPTS_CALLBACK = 'get_current_available_test_with_attempts_callback'
-

@@ -21,6 +21,8 @@ def get_authors_buttons_():
     return inline_keyboard
 
 
+# CREATED CLASSROOMS
+
 def get_created_classrooms_keyboard(classrooms: list[Classroom]):
     classrooms_list = []
     for classroom in classrooms:
@@ -29,6 +31,14 @@ def get_created_classrooms_keyboard(classrooms: list[Classroom]):
         *classrooms_list,
         [get_button(CREATE_CLASSROOM_TEXT, CREATE_CLASSROOM_CALLBACK)],
         [BACK_TO_MAIN_MENU_BTN],
+    ]
+    return types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
+
+
+def get_spec_classroom_keyboard(classroom: Classroom):
+    inline_keyboard = [
+        [get_button(DELETE_CLASSROOM_TEXT, f"{DELETE_CLASSROOM_CALLBACK}#{classroom.id}")],
+        [get_button(GO_TO_PREVIOUS_MENU_TEXT, AUTHORS_CLASSROOMS_CALLBACK)],
     ]
     return types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
 
