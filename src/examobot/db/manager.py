@@ -1,11 +1,11 @@
 import asyncio
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import select, and_, or_
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncEngine
 
 from src.examobot.db.tables import Test, Task, User, Classroom, Base, UserClassroomParticipation, \
-    UserTestParticipation
+    UserTestParticipation, UserTestParticipationStatus, TestStatus
 
 DATABASE_URI = 'sqlite+aiosqlite:///mydatabase.db'
 
@@ -49,7 +49,7 @@ class DBManager:
             user = user.first()
         return bool(user)
 
-    # CLASSROOMS AND TESTS
+    # CREATED CLASSROOMS AND TESTS
 
     async def get_test_by_id(self, test_id: int) -> Test:
         query = select(Test).where(Test.id == test_id)
@@ -105,18 +105,20 @@ class DBManager:
         return classrooms.scalars().all()
 
     async def check_if_user_in_test(self, test_id: int, user_id: int) -> bool:
-        query = select(UserTestParticipation).where(UserTestParticipation.test_id == test_id and
-                                                    UserTestParticipation.user_id == user_id)
+        query = select(UserTestParticipation).where(and_(UserTestParticipation.test_id == test_id,
+                                                         UserTestParticipation.user_id == user_id))
         async with self.session_maker() as session:
             result = await session.execute(query)
-        return bool(result.first())
+            test = result.scalars().first()
+        return bool(test)
 
     async def check_if_user_in_classroom(self, classroom_id: int, user_id: int) -> bool:
-        query = select(UserClassroomParticipation).where(UserClassroomParticipation.classroom_id == classroom_id and
-                                                         UserClassroomParticipation.user_id == user_id)
+        query = select(UserClassroomParticipation).where(and_(UserClassroomParticipation.classroom_id == classroom_id,
+                                                              UserClassroomParticipation.user_id == user_id))
         async with self.session_maker() as session:
             result = await session.execute(query)
-        return bool(result.first())
+            classroom = result.scalars().first()
+        return bool(classroom)
 
     async def add_user_to_test_participants(self, test_id: int, user_id: int):
         async with self.session_maker() as session:
@@ -142,6 +144,24 @@ class DBManager:
             await session.commit()
 
         return new_classroom
+
+    # CURRENT TESTS
+
+    async def get_current_ended_or_with_no_attempts_tests_by_user_id(self, user_id: int):
+        query = select(Test).where(and_(UserTestParticipation.user_id == user_id,
+                                        or_(Test.status_set_by_author == TestStatus.UNAVAILABLE,
+                                            UserTestParticipation.status == UserTestParticipationStatus.PASSED_NO_ATTEMPTS)))
+        async with self.session_maker() as session:
+            tests = await session.execute(query)
+        return tests.scalars().all()
+
+    async def get_current_available_test_with_attempts_by_user_id(self, user_id: int):
+        query = select(Test).where(and_(UserTestParticipation.user_id == user_id,
+                                        Test.status_set_by_author == TestStatus.AVAILABLE,
+                                        UserTestParticipation.status != UserTestParticipationStatus.PASSED_NO_ATTEMPTS))
+        async with self.session_maker() as session:
+            tests = await session.execute(query)
+        return tests.scalars().all()
 
     async def get_tasks_by_test_id(self, test_id: int):
         query = select(Task).where(Task.test_id == test_id).order_by(Task.order_id)

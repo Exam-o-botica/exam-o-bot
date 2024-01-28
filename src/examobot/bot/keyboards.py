@@ -62,11 +62,34 @@ def get_spec_created_test_keyboard(test: Test):
     ]
     return types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
 
+
+# CURRENT TESTS
+
+def get_current_tests_menu_keyboard():
+    inline_keyboard = [
+        [get_button(CURRENT_ENDED_OR_WITH_NO_ATTEMPTS_TESTS_TEXT, CURRENT_ENDED_OR_WITH_NO_ATTEMPTS_TESTS_CALLBACK)],
+        [get_button(CURRENT_AVAILABLE_TEST_WITH_ATTEMPTS_TEXT, CURRENT_AVAILABLE_TEST_WITH_ATTEMPTS_CALLBACK)],
+        [BACK_TO_MAIN_MENU_BTN],
+    ]
+    return types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
+
+
+def get_current_tests_keyboard(tests: list[Test]):
+    tests_list = []
+    for test in tests:
+        tests_list.append([get_button(test.title, f'{SPEC_CURRENT_TEST_CALLBACK}#{test.id}')])
+    inline_keyboard = [
+        *tests_list,
+        [get_button(GO_TO_PREVIOUS_MENU_TEXT, CURRENT_TESTS_CALLBACK)],
+    ]
+    return types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
+
+
 # RESPONDENT'S KEYBOARDS #
 
 def get_respondent_buttons_():
     inline_keyboard = [
-        # will add
+        [get_button(CURRENT_TESTS_TEXT, CURRENT_TESTS_CALLBACK)],
     ]
     return inline_keyboard
 
@@ -74,6 +97,13 @@ def get_respondent_buttons_():
 # COMMON KEYBOARDS #
 def get_main_menu_keyboard():
     inline_keyboard = get_authors_buttons_() + get_respondent_buttons_()
+    return types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
+
+
+def get_back_to_main_menu_keyboard():
+    inline_keyboard = [
+        [BACK_TO_MAIN_MENU_BTN],
+    ]
     return types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
 
 
