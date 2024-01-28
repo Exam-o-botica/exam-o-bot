@@ -58,7 +58,28 @@ def get_spec_created_test_keyboard(test: Test):
         [get_button(CLOSE_TEST_TEXT, f"{CLOSE_TEST_CALLBACK}#{test.id}")],
         [get_button(REFRESH_TEST_DATA_TEXT, f"{REFRESH_TEST_DATA_CALLBACK}#{test.id}")],
         [get_button(EDIT_TEST_TEXT, f"{EDIT_TEST_CALLBACK}#{test.id}")],
-        [BACK_TO_MAIN_MENU_BTN],
+        [get_button(SHARE_TEST_LINK_TEXT, f"{SHARE_TEST_LINK_CALLBACK}#{test.id}")],
+        [get_button(GO_TO_PREVIOUS_MENU_TEXT, AUTHORS_TESTS_CALLBACK)],
+    ]
+    return types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
+
+
+def get_share_test_link_keyboard(test_id: int):
+    inline_keyboard = [
+        [get_button(SHARE_TEST_LINK_TO_CLASSROOM_TEXT, f'{SHARE_TEST_LINK_TO_CLASSROOM_CALLBACK}#{test_id}')],
+        [get_button(GO_TO_PREVIOUS_MENU_TEXT, f'{SPEC_CREATED_TEST_CALLBACK}#{test_id}')],
+    ]
+    return types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
+
+
+def get_share_test_link_to_classroom_keyboard(test_id: int, classrooms: list[Classroom]):
+    classrooms_list = []
+    for classroom in classrooms:
+        classrooms_list.append(
+            [get_button(classroom.title, f'{SPEC_SHARE_TEST_LINK_TO_CLASSROOM_CALLBACK}#{test_id}#{classroom.id}')])
+    inline_keyboard = [
+        *classrooms_list,
+        [get_button(GO_TO_PREVIOUS_MENU_TEXT, f'{SPEC_CREATED_TEST_CALLBACK}#{test_id}')],
     ]
     return types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
 

@@ -37,6 +37,14 @@ REFRESH_TEST_DATA_CALLBACK = 'refresh_test_data_callback'
 EDIT_TEST_TEXT = 'edit test'
 EDIT_TEST_CALLBACK = 'edit_test_callback'
 
+SHARE_TEST_LINK_TEXT = 'share test link'
+SHARE_TEST_LINK_CALLBACK = 'share_test_link_callback'
+
+SHARE_TEST_LINK_TO_CLASSROOM_TEXT = 'send test to classroom'
+SHARE_TEST_LINK_TO_CLASSROOM_CALLBACK = 'share_test_link_to_classroom_callback'
+
+SPEC_SHARE_TEST_LINK_TO_CLASSROOM_CALLBACK = 'SPEC_SHARE_TEST_LINK_TO_CLASSROOM_CALLBACK'
+
 # current tests
 
 CURRENT_TESTS_TEXT = 'current tests'

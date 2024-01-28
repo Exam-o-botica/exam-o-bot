@@ -1,4 +1,5 @@
 import asyncio
+import enum
 import logging
 import os
 import re
@@ -33,6 +34,11 @@ class Form(StatesGroup):
     test_attempts_number = State()
     test_link = State()
     test_save = State()
+
+
+class Entity(Enum):
+    TEST = "test"
+    CLASSROOM = "classroom"
 
 
 '''
@@ -121,6 +127,13 @@ def get_user_name(user: types.User) -> str:
     return name
 
 
+async def send_message_to_user(bot: Bot, user_id: int, message: str, reply_markup=None) -> None:
+    try:
+        await bot.send_message(user_id, message, reply_markup=reply_markup)
+    except Exception as e:
+        logging.error(f"error while sending message to user {user_id}: {e}")
+
+
 @dp.callback_query()
 async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
     # main menu authors options
@@ -146,6 +159,15 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
     elif SPEC_CREATED_TEST_CALLBACK in call.data:
         await handle_spec_created_test_query(call)
 
+    elif SHARE_TEST_LINK_CALLBACK in call.data:
+        await handle_share_test_link_query(call)
+
+    elif SHARE_TEST_LINK_TO_CLASSROOM_CALLBACK in call.data:
+        await handle_share_test_link_to_classroom_query(call)
+
+    elif SPEC_SHARE_TEST_LINK_TO_CLASSROOM_CALLBACK in call.data:
+        await handle_spec_share_test_link_to_classroom_query(call)
+
     # CURRENT TESTS
 
     elif call.data == CURRENT_TESTS_CALLBACK:
@@ -159,14 +181,48 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
         await handle_current_ended_or_with_no_attempts_tests_query(call)
 
 
-# async def handle_current_tests_query(call: types.CallbackQuery) -> None:
-#     current_tests = await db_manager.get_current_tests_by_user_id(call.from_user.id)
-#     if len(current_tests) == 0:
-#         text = "you don't have current tests"
-#     else:
-#         text = "your current tests"
-#     await call.bot.edit_message_text(text, call.from_user.id, call.message.message_id,
-#                                      reply_markup=get_current_tests_keyboard(current_tests))
+async def handle_spec_share_test_link_to_classroom_query(call: types.CallbackQuery) -> None:
+    test_id, classroom_id = call.data.split("#")[1:]
+    await send_test_to_classroom_participants(test_id, classroom_id, call.bot)
+    await call.bot.edit_message_text("test send to classroom participants", call.from_user.id, call.message.message_id,
+                                     reply_markup=get_go_to_main_menu_keyboard())
+    await call.bot.answer_callback_query(call.id)
+
+
+async def send_test_to_classroom_participants(test_id: int, classroom_id: int, bot: Bot) -> None:
+    participants = await db_manager.get_users_in_classroom(classroom_id)
+    for participant in participants:
+        await db_manager.add_user_to_test_participants(test_id, participant.id)
+        await send_message_to_user(bot, participant.id, "you have new test to pass")
+
+
+async def handle_share_test_link_to_classroom_query(call: types.CallbackQuery) -> None:
+    test_id = get_test_id_or_classroom_id_from_callback(call.data)
+    classrooms = await db_manager.get_classrooms_by_author_id(call.from_user.id)
+    if len(classrooms) == 0:
+        text = "you have no classrooms yet. But u can create a new one"
+    else:
+        text = "choose classroom"
+    await call.bot.edit_message_text(text, call.from_user.id, call.message.message_id,
+                                     reply_markup=get_created_classrooms_keyboard(classrooms))
+    await call.bot.answer_callback_query(call.id)
+
+
+async def handle_share_test_link_query(call: types.CallbackQuery) -> None:
+    test_id = get_test_id_or_classroom_id_from_callback(call.data)
+    created_classrooms = await db_manager.get_classrooms_by_author_id(call.from_user.id)
+    await call.bot.edit_message_text("choose classroom to send test",
+                                     call.from_user.id, call.message.message_id,
+                                     reply_markup=get_share_test_link_to_classroom_keyboard(test_id,
+                                                                                            created_classrooms))
+
+
+def generate_link(type: Entity, uuid: int) -> str:
+    if type == Entity.TEST:
+        return f"https://t.me/beermovent_bot?start=test={uuid}"
+    else:
+        return f"https://t.me/beermovent_bot?start=class={uuid}"
+
 
 async def handle_current_ended_or_with_no_attempts_tests_query(call: types.CallbackQuery) -> None:
     current_ended_or_with_no_attempts_tests = await db_manager.get_current_ended_or_with_no_attempts_tests_by_user_id(
