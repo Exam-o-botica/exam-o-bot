@@ -58,6 +58,13 @@ class DBManager:
             test = result.scalars().first()
         return test
 
+    async def get_classroom_by_id(self, classroom_id: int) -> Classroom:
+        query = select(Classroom).where(Classroom.id == classroom_id)
+        async with self.session_maker() as session:
+            result = await session.execute(query)
+            classroom = result.scalars().first()
+        return classroom
+
     async def get_tests_by_author_id(self, author_id: int) -> list[Test]:
         query = select(Test).where(Test.author_id == author_id)
         async with self.session_maker() as session:
