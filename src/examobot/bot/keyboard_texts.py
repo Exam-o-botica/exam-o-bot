@@ -1,60 +1,82 @@
-STUDENT_TEXT = 'student_text'
-STUDENT_CALLBACK = 'student_callback'
+from typing import Any, Optional
 
-BACK_TO_MAIN_MENU_TEXT = 'back to main menu'
+from aiogram.types import InlineKeyboardButton
+
+
+class Button:
+    callback_suffix: str = "_callback"
+
+    def __init__(self, name: str, text: str) -> None:
+        self.name = name
+        self.txt = text
+
+    @property
+    def text(self):
+        return self.txt
+
+    @property
+    def callback(self):
+        return self.name.lower() + self.callback_suffix
+
+    def get_button(self,
+                   new_text: Optional[str] = None,
+                   parameters: Optional[list[Any]] = None,
+                   ) -> InlineKeyboardButton:
+        callback = self.callback
+        if parameters:
+            callback = callback + "#" + "#".join([str(p) for p in parameters])
+
+        text = new_text if new_text else self.txt
+        return InlineKeyboardButton(text=text, callback_data=callback)
+
+    def has_that_callback(self, received_callback: str):
+        return received_callback.startswith(self.callback)
+
+
 GO_TO_MAIN_MENU_TEXT = 'go to menu'
-BACK_TO_MAIN_MENU_CALLBACK = 'back_to_main_menu_callback'
 GO_TO_PREVIOUS_MENU_TEXT = 'Back'
+
+BACK_TO_MAIN_MENU = Button(name='BACK_TO_MAIN_MENU', text='back to main menu')
 
 ### FOR AUTHORS ###
 
 # Classrooms
 
-AUTHORS_CLASSROOMS_TEXT = 'my classrooms'  # menu for classrooms
-AUTHORS_CLASSROOMS_CALLBACK = 'get_authors_classrooms_callback'
+AUTHORS_CLASSROOMS = Button(name='AUTHORS_CLASSROOMS', text='my classrooms')
 
-SPEC_CREATED_CLASSROOM_CALLBACK = 'SPEC_CREATED_CLASSROOM_CALLBACK'  # spec = go to specific classroom
+SPEC_CREATED_CLASSROOM = Button(name='SPEC_CREATED_CLASSROOM', text='specific classroom')
 
-CREATE_CLASSROOM_TEXT = 'add classroom'
-CREATE_CLASSROOM_CALLBACK = 'create_classroom_callback'
+CREATE_CLASSROOM = Button(name='CREATE_CLASSROOM', text='add classroom')
 
 # created Tests
 
-AUTHORS_TESTS_TEXT = 'created tests'
-AUTHORS_TESTS_CALLBACK = 'get_authors_tests_callback'
+AUTHORS_TESTS = Button(name='AUTHORS_TESTS', text='created tests')
 
-SPEC_CREATED_TEST_CALLBACK = 'SPEC_CREATED_TEST_CALLBACK'
+SPEC_CREATED_TEST = Button(name='SPEC_CREATED_TEST', text='specific test')
 
-CREATE_TEST_TEXT = 'add test'
-CREATE_TEST_CALLBACK = 'create_test_callback'
+CREATE_TEST = Button(name='CREATE_TEST', text='add test')
 
-CLOSE_TEST_TEXT = 'close test'
-CLOSE_TEST_CALLBACK = 'close_test_callback'
+CLOSE_TEST = Button(name='CLOSE_TEST', text='close test')
 
-REFRESH_TEST_DATA_TEXT = 'refresh test data'
-REFRESH_TEST_DATA_CALLBACK = 'refresh_test_data_callback'
+REFRESH_TEST_DATA = Button(name='REFRESH_TEST_DATA', text='refresh test data')
 
-EDIT_TEST_TEXT = 'edit test'
-EDIT_TEST_CALLBACK = 'edit_test_callback'
+EDIT_TEST = Button(name='EDIT_TEST', text='edit test')
 
-SHARE_TEST_LINK_TEXT = 'share test link'
-SHARE_TEST_LINK_CALLBACK = 'share_test_link_callback'
+SHARE_TEST_LINK = Button(name='SHARE_TEST_LINK', text='share test link')
 
-SHARE_TEST_LINK_TO_CLASSROOM_TEXT = 'send test to classroom'
-SHARE_TEST_LINK_TO_CLASSROOM_CALLBACK = 'share_test_link_to_classroom_callback'
+SHARE_TEST_LINK_TO_CLASSROOM = Button(name='SHARE_TEST_LINK_TO_CLASSROOM', text='send test to classroom')
 
-SPEC_SHARE_TEST_LINK_TO_CLASSROOM_CALLBACK = 'SPEC_SHARE_TEST_LINK_TO_CLASSROOM_CALLBACK'
+SPEC_SHARE_TEST_LINK_TO_CLASSROOM = Button(name='SPEC_SHARE_TEST_LINK_TO_CLASSROOM',
+                                           text='specific share link to classroom')
 
 # current tests
 
-CURRENT_TESTS_TEXT = 'current tests'
-CURRENT_TESTS_CALLBACK = 'get_current_tests_callback'
+CURRENT_TESTS = Button(name='CURRENT_TESTS', text='current tests')
 
-SPEC_CURRENT_TEST_CALLBACK = 'SPEC_CURRENT_TEST_CALLBACK'
+SPEC_CURRENT_TEST = Button(name='SPEC_CURRENT_TEST', text='specific current test')
 
-CURRENT_ENDED_OR_WITH_NO_ATTEMPTS_TESTS_TEXT = 'ended tests'
-CURRENT_ENDED_OR_WITH_NO_ATTEMPTS_TESTS_CALLBACK = 'get_current_ended_or_with_no_attempts_tests_callback'
+CURRENT_ENDED_OR_WITH_NO_ATTEMPTS_TESTS = Button(
+    name='CURRENT_ENDED_OR_WITH_NO_ATTEMPTS_TESTS', text='ended tests')
 
-CURRENT_AVAILABLE_TEST_WITH_ATTEMPTS_TEXT = 'avaliable tests'
-CURRENT_AVAILABLE_TEST_WITH_ATTEMPTS_CALLBACK = 'get_current_available_test_with_attempts_callback'
-
+CURRENT_AVAILABLE_TEST_WITH_ATTEMPTS = Button(
+    name='CURRENT_AVAILABLE_TEST_WITH_ATTEMPTS', text='available tests')
