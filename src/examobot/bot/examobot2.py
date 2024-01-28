@@ -138,50 +138,40 @@ async def send_message_to_user(bot: Bot, user_id: int, message: str, reply_marku
 async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
     # main menu authors options
 
-    # if call.data.startswith(BACK_TO_MAIN_MENU_CALLBACK):
     if BACK_TO_MAIN_MENU.has_that_callback(call.data):
         await call.bot.edit_message_text(MAIN_MENU_TEXT, call.from_user.id, call.message.message_id,
                                          reply_markup=get_main_menu_keyboard())
 
-    # elif call.data.startswith(AUTHORS_CLASSROOMS_CALLBACK):
     elif AUTHORS_CLASSROOMS.has_that_callback(call.data):
         await handle_authors_classrooms_query(call)
 
-    # elif call.data.startswith(CREATE_CLASSROOM_CALLBACK):
     elif CREATE_CLASSROOM.has_that_callback(call.data):
         await create_classroom(call)
 
     # CREATED TESTS
 
-    # elif call.data.startswith(CREATE_TEST_CALLBACK):
     elif CREATE_TEST.has_that_callback(call.data):
         await handle_create_test_query(call, state)
 
-    # elif call.data.startswith(EDIT_TEST_CALLBACK):
     elif EDIT_TEST.has_that_callback(call.data):
         await handle_edit_test_query(call, state)
 
-    # elif call.data.startswith(AUTHORS_TESTS_CALLBACK):
     elif AUTHORS_TESTS.has_that_callback(call.data):
         await handle_authors_tests_query(call)
 
-    # elif call.data.startswith(SPEC_CREATED_TEST_CALLBACK):
     elif SPEC_CREATED_TEST.has_that_callback(call.data):
         await handle_spec_created_test_query(call)
 
-    # elif call.data.startswith(SHARE_TEST_LINK_CALLBACK):
     elif SHARE_TEST_LINK.has_that_callback(call.data):
         await handle_share_test_link_query(call)
 
-    # elif call.data.startswith(SHARE_TEST_LINK_TO_CLASSROOM_CALLBACK):
     elif SHARE_TEST_LINK_TO_CLASSROOM.has_that_callback(call.data):
         await handle_share_test_link_to_classroom_query(call)
 
-    # elif call.data.startswith(SPEC_SHARE_TEST_LINK_TO_CLASSROOM_CALLBACK):
     elif SPEC_SHARE_TEST_LINK_TO_CLASSROOM.has_that_callback(call.data):
         await handle_spec_share_test_link_to_classroom_query(call)
 
-    elif call.data.startswith(SPEC_CREATED_CLASSROOM_CALLBACK):
+    elif SPEC_CREATED_CLASSROOM.has_that_callback(call.data):
         classroom_id = get_test_id_or_classroom_id_from_callback(call.data)
         classroom = await db_manager.get_classroom_by_id(classroom_id)
         await call.bot.edit_message_text(f"classroom title: {classroom.title}\n"
@@ -191,16 +181,13 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
 
     # CURRENT TESTS
 
-    # elif call.data.startswith(CURRENT_TESTS_CALLBACK):
     elif CURRENT_TESTS.has_that_callback(call.data):
         await call.bot.edit_message_text("choose test types", call.from_user.id, call.message.message_id,
                                          reply_markup=get_current_tests_menu_keyboard())
 
-    # elif call.data.startswith(CURRENT_AVAILABLE_TEST_WITH_ATTEMPTS_CALLBACK):
     elif CURRENT_AVAILABLE_TEST_WITH_ATTEMPTS.has_that_callback(call.data):
         await handle_current_available_test_with_attempts_query(call)
 
-    # elif call.data.startswith(CURRENT_ENDED_OR_WITH_NO_ATTEMPTS_TESTS_CALLBACK):
     elif CURRENT_ENDED_OR_WITH_NO_ATTEMPTS_TESTS.has_that_callback(call.data):
         await handle_current_ended_or_with_no_attempts_tests_query(call)
 
