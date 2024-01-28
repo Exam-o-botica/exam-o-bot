@@ -132,7 +132,7 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
     elif call.data == CREATE_CLASSROOM_CALLBACK:
         await create_classroom(call)
 
-    # TESTS
+    # CREATED TESTS
 
     elif call.data == CREATE_TEST_CALLBACK:
         await create_test(call, state)
@@ -142,6 +142,49 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
 
     elif SPEC_CREATED_TEST_CALLBACK in call.data:
         await handle_spec_created_test_query(call)
+
+    # CURRENT TESTS
+
+    elif call.data == CURRENT_TESTS_CALLBACK:
+        await call.bot.edit_message_text("choose test types", call.from_user.id, call.message.message_id,
+                                         reply_markup=get_current_tests_menu_keyboard())
+
+    elif call.data == CURRENT_AVAILABLE_TEST_WITH_ATTEMPTS_CALLBACK:
+        await handle_current_available_test_with_attempts_query(call)
+
+    elif call.data == CURRENT_ENDED_OR_WITH_NO_ATTEMPTS_TESTS_CALLBACK:
+        await handle_current_ended_or_with_no_attempts_tests_query(call)
+
+
+# async def handle_current_tests_query(call: types.CallbackQuery) -> None:
+#     current_tests = await db_manager.get_current_tests_by_user_id(call.from_user.id)
+#     if len(current_tests) == 0:
+#         text = "you don't have current tests"
+#     else:
+#         text = "your current tests"
+#     await call.bot.edit_message_text(text, call.from_user.id, call.message.message_id,
+#                                      reply_markup=get_current_tests_keyboard(current_tests))
+
+async def handle_current_ended_or_with_no_attempts_tests_query(call: types.CallbackQuery) -> None:
+    current_ended_or_with_no_attempts_tests = await db_manager.get_current_ended_or_with_no_attempts_tests_by_user_id(
+        call.from_user.id)
+    if len(current_ended_or_with_no_attempts_tests) == 0:
+        text = "you don't have ended tests"
+    else:
+        text = "your ended tests"
+    await call.bot.edit_message_text(text, call.from_user.id, call.message.message_id,
+                                     reply_markup=get_current_tests_keyboard(current_ended_or_with_no_attempts_tests))
+
+
+async def handle_current_available_test_with_attempts_query(call: types.CallbackQuery) -> None:
+    current_available_test_with_attempts = await db_manager.get_current_available_test_with_attempts_by_user_id(
+        call.from_user.id)
+    if len(current_available_test_with_attempts) == 0:
+        text = "you don't have current tests"
+    else:
+        text = "your current tests"
+    await call.bot.edit_message_text(text, call.from_user.id, call.message.message_id,
+                                     reply_markup=get_current_tests_keyboard(current_available_test_with_attempts))
 
 
 def get_spec_test_info_message(test: Test) -> str:
@@ -165,7 +208,6 @@ async def handle_spec_created_test_query(call: types.CallbackQuery) -> None:
                                      call.from_user.id, call.message.message_id,
                                      reply_markup=get_spec_created_test_keyboard(test),
                                      parse_mode="HTML")
-
 
 
 async def create_test(call: types.CallbackQuery, state: FSMContext) -> None:
