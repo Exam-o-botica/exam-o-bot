@@ -111,6 +111,8 @@ class Test(Base):
     deadline: Mapped[int] = mapped_column(nullable=False, default=-1)
     attempts_number: Mapped[int] = mapped_column(nullable=False, default=1)
     status_set_by_author: Mapped[TestStatus] = mapped_column(nullable=False, default=TestStatus.AVAILABLE)
+    link: Mapped[str] = mapped_column(nullable=False)
+    meta_data: Mapped[Optional[str]] = mapped_column(nullable=False, default=None)
 
     author_id: Mapped[BigInteger] = mapped_column(ForeignKey("users.id"), nullable=False)
     author: Mapped[User] = relationship(back_populates="created_tests")  # Child

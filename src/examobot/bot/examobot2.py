@@ -11,6 +11,7 @@ from aiogram.types import Message
 
 from consts import *
 from keyboards import *
+from src.examobot.form_handlers import *
 from src.examobot.db.manager import DBManager
 
 # from src.main import bot, dp
@@ -196,16 +197,39 @@ async def type_test_attempts_number(message: Message, state: FSMContext):
 
 async def test_save(message: Message, state: FSMContext):
     data = await state.get_data()
-    await db_manager.add_test(
-        title=data["test_title"],
-        author_id=message.from_user.id,
-        time=int(data["test_time"]),
-        deadline=int(data["test_deadline"]),
-        attempts_number=int(data["test_attempts_number"])
+
+    await message.answer(
+        "form processing could take some time :(",
     )
+    meta_data = await FormExtractor.extract(form_url=data["test_link"])
+    if not meta_data and "second_form_attempt" not in data:
+        await message.answer(
+            "unfortunately, I can't parse your Google form for some reason. "
+            "try to send the link again (mind the format!)",
+        )
+        await state.update_data(second_form_attempt=True)
+        await state.set_state(Form.test_link)
+        await message.answer(text="type test link to Google form in format...")
+        return
+    elif not meta_data and "second_form_attempt" in data:
+        await message.answer(
+            "still can't parse the form. aborting..."
+        )
+    else:
+        await db_manager.add_test(
+            title=data["test_title"],
+            author_id=message.from_user.id,
+            time=int(data["test_time"]),
+            deadline=int(data["test_deadline"]),
+            attempts_number=int(data["test_attempts_number"]),
+            link=data["test_link"],
+            meta_data=meta_data,
+        )
+        await message.answer(meta_data)
+
     tests = await db_manager.get_tests_by_author_id(message.from_user.id)
     await message.answer(
-        "test is saved",
+        "test creation finished",
         reply_markup=get_tests_keyboard(tests)
     )
     await state.clear()
