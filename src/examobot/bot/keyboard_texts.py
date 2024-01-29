@@ -70,7 +70,17 @@ REFRESH_TEST_DATA = Button(name='REFRESH_TEST_DATA', text='refresh test data')
 
 EDIT_TEST = Button(name='EDIT_TEST', text='edit test')
 
-SHARE_TEST_LINK = Button(name='SHARE_TEST_LINK', text='send test to classroom')
+EDIT_TEST_TITLE = Button(name='EDIT_TEST_TITLE', text='edit title')
+
+EDIT_TEST_TIME = Button(name='EDIT_TEST_TIME', text='edit duration')
+
+EDIT_TEST_DEADLINE = Button(name='EDIT_TEST_DEADLINE', text='edit deadline')
+
+EDIT_TEST_ATTEMPTS_NUMBER = Button(name='EDIT_TEST_ATTEMPTS_NUMBER', text='edit number of attempts')
+
+EDIT_TEST_LINK = Button(name='EDIT_TEST_LINK', text='edit link to form')
+
+SHARE_TEST_LINK = Button(name='SHARE_TEST_LINK', text='share test link')
 
 SHARE_TEST_LINK_TO_CLASSROOM = Button(name='SHARE_TEST_LINK_TO_CLASSROOM', text='send test to classroom')
 

@@ -145,6 +145,27 @@ def get_current_tests_keyboard(tests: list[Test]):
     return types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
 
 
+def get_test_edit_keyboard(test_id: int):
+    inline_keyboard = [
+        [EDIT_TEST_TITLE.get_button(parameters=[test_id])],
+        [EDIT_TEST_TIME.get_button(parameters=[test_id])],
+        [EDIT_TEST_DEADLINE.get_button(parameters=[test_id])],
+        [EDIT_TEST_ATTEMPTS_NUMBER.get_button(parameters=[test_id])],
+        [EDIT_TEST_LINK.get_button(parameters=[test_id])],
+        [SPEC_CREATED_TEST.get_button(
+            new_text=GO_TO_PREVIOUS_MENU_TEXT, parameters=[test_id])],
+    ]
+    return types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
+
+
+def get_test_edit_cancel_keyboard(test_id: int):
+    inline_keyboard = [
+        [EDIT_TEST.get_button(
+            new_text=GO_TO_PREVIOUS_MENU_TEXT, parameters=[test_id])],
+    ]
+    return types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
+
+
 # RESPONDENT'S KEYBOARDS #
 
 def get_respondent_buttons_():

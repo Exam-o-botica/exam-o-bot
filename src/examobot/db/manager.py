@@ -212,9 +212,7 @@ class DBManager:
             tasks = await session.execute(query)
 
         return tasks.scalars().all()
-
-    # CURRENT CLASSROOMS
-
+      
     async def get_current_classrooms_by_user_id(self, user_id: int):
         query = (
             select(Classroom).join(UserClassroomParticipation).where(
@@ -222,6 +220,12 @@ class DBManager:
         async with self.session_maker() as session:
             classrooms = await session.execute(query)
         return classrooms.scalars().all()
+
+    async def update_test_by_id(self, test_id: int, **kwargs):
+        query = update(Test).values(**kwargs).where(Test.id == test_id)
+        async with self.session_maker() as session:
+            await session.execute(query)
+            await session.commit()
 
 #
 # async def initial_add(self):
