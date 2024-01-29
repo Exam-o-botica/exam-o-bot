@@ -174,7 +174,9 @@ def get_go_to_main_menu_keyboard():
     return types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
 
 
-def go_to_previous_menu_keyboard(button: Button, parameters: list[Any]):
+def go_to_previous_menu_keyboard(button: Button, parameters=None):
+    if parameters is None:
+        parameters = []
     inline_keyboard = [
         [button.get_button(parameters=parameters, new_text=GO_TO_PREVIOUS_MENU_TEXT)],
     ]

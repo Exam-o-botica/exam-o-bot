@@ -68,7 +68,7 @@ REFRESH_TEST_DATA = Button(name='REFRESH_TEST_DATA', text='refresh test data')
 
 EDIT_TEST = Button(name='EDIT_TEST', text='edit test')
 
-SHARE_TEST_LINK = Button(name='SHARE_TEST_LINK', text='share test link')
+SHARE_TEST_LINK = Button(name='SHARE_TEST_LINK', text='send test to classroom')
 
 SHARE_TEST_LINK_TO_CLASSROOM = Button(name='SHARE_TEST_LINK_TO_CLASSROOM', text='send test to classroom')
 

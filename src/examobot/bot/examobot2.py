@@ -183,10 +183,6 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
     elif DELETE_ENTITY_CONFIRM.has_that_callback(call.data):
         await handle_delete_entity_confirm_query(call)
 
-    elif CURRENT_CLASSROOMS.has_that_callback(call.data):
-        await handle_current_classrooms_query(call)
-
-
     # CURRENT TESTS
 
     elif CURRENT_TESTS.has_that_callback(call.data):
@@ -198,6 +194,30 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
 
     elif CURRENT_ENDED_OR_WITH_NO_ATTEMPTS_TESTS.has_that_callback(call.data):
         await handle_current_ended_or_with_no_attempts_tests_query(call)
+
+    # CURRENT CLASSROOMS
+
+    elif CURRENT_CLASSROOMS.has_that_callback(call.data):
+        await handle_current_classrooms_query(call)
+
+    elif SPEC_CURRENT_CLASSROOM.has_that_callback(call.data):
+        await handle_spec_current_classroom_query(call)
+
+
+async def handle_spec_current_classroom_query(call: types.CallbackQuery):
+    classroom_id = get_test_id_or_classroom_id_from_callback(call.data)
+    classroom = await db_manager.get_classroom_by_id(classroom_id)
+    if not classroom:
+        await call.bot.edit_message_text("this classroom was deleted", call.from_user.id, call.message.message_id,
+                                         reply_markup=get_go_to_main_menu_keyboard())
+        return
+    author = await db_manager.get_user_by_id(classroom.author_id)
+
+    msg = f"classroom title: {classroom.title}\n" \
+          f"author: {author.name} - @{author.username}\n"
+
+    await call.bot.edit_message_text(msg, call.from_user.id, call.message.message_id,
+                                     reply_markup=go_to_previous_menu_keyboard(CURRENT_CLASSROOMS))
 
 
 async def handle_current_classrooms_query(call: types.CallbackQuery) -> None:
@@ -305,7 +325,7 @@ async def handle_current_ended_or_with_no_attempts_tests_query(call: types.Callb
     current_ended_or_with_no_attempts_tests = await db_manager.get_current_ended_or_with_no_attempts_tests_by_user_id(
         call.from_user.id)
     if len(current_ended_or_with_no_attempts_tests) == 0:
-        text = "you don't have ended tests"
+        text = "you don't have ended tests or they have been deleted by author"
     else:
         text = "your ended tests"
     await call.bot.edit_message_text(text, call.from_user.id, call.message.message_id,

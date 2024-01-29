@@ -35,6 +35,13 @@ class DBManager:
 
     # USERS
 
+    async def get_user_by_id(self, user_id: int) -> User:
+        query = select(User).where(User.id == user_id)  # that's fine
+        async with self.session_maker() as session:
+            result = await session.execute(query)
+            user = result.scalars().first()
+        return user
+
     async def add_user(self, user_id: int, username: str, name: str) -> User:
         new_user = User(id=user_id, username=username, name=name)
         async with self.session_maker() as session:
@@ -43,7 +50,7 @@ class DBManager:
         return new_user
 
     async def check_if_user_exists(self, user_id: int) -> bool:
-        query = select(User).where(User.id == user_id)  # that's correct
+        query = select(User).where(User.id == user_id)  # that's fine
         async with self.session_maker() as session:
             user = await session.execute(query)
             user = user.first()
@@ -178,17 +185,17 @@ class DBManager:
     # CURRENT TESTS
 
     async def get_current_ended_or_with_no_attempts_tests_by_user_id(self, user_id: int):
-        query = select(Test).where(and_(UserTestParticipation.user_id == user_id,
-                                        or_(Test.status_set_by_author == TestStatus.UNAVAILABLE,
-                                            UserTestParticipation.status == UserTestParticipationStatus.PASSED_NO_ATTEMPTS)))
+        query = select(Test).join(UserTestParticipation).where(and_(UserTestParticipation.user_id == user_id,
+                                                                    or_(Test.status_set_by_author == TestStatus.UNAVAILABLE,
+                                                                        UserTestParticipation.status == UserTestParticipationStatus.PASSED_NO_ATTEMPTS)))
         async with self.session_maker() as session:
             tests = await session.execute(query)
         return tests.scalars().all()
 
     async def get_current_available_test_with_attempts_by_user_id(self, user_id: int):
-        query = select(Test).where(and_(UserTestParticipation.user_id == user_id,
-                                        Test.status_set_by_author == TestStatus.AVAILABLE,
-                                        UserTestParticipation.status != UserTestParticipationStatus.PASSED_NO_ATTEMPTS))
+        query = select(Test).join(UserTestParticipation).where(and_(UserTestParticipation.user_id == user_id,
+                                                                    Test.status_set_by_author == TestStatus.AVAILABLE,
+                                                                    UserTestParticipation.status != UserTestParticipationStatus.PASSED_NO_ATTEMPTS))
         async with self.session_maker() as session:
             tests = await session.execute(query)
         return tests.scalars().all()
@@ -204,7 +211,8 @@ class DBManager:
 
     async def get_current_classrooms_by_user_id(self, user_id: int):
         query = (
-            select(Classroom).join(UserClassroomParticipation).where(UserClassroomParticipation.user_id == user_id))
+            select(Classroom).join(UserClassroomParticipation).where(
+                UserClassroomParticipation.user_id == user_id))  # that's fine
         async with self.session_maker() as session:
             classrooms = await session.execute(query)
         return classrooms.scalars().all()
