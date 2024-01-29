@@ -172,12 +172,11 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
         await handle_spec_share_test_link_to_classroom_query(call)
 
     elif SPEC_CREATED_CLASSROOM.has_that_callback(call.data):
-        classroom_id = get_test_id_or_classroom_id_from_callback(call.data)
-        classroom = await db_manager.get_classroom_by_id(classroom_id)
-        await call.bot.edit_message_text(f"classroom title: {classroom.title}\n"
-                                         f"link: {generate_link(Entity.CLASSROOM, classroom.uuid)}",
-                                         call.from_user.id, call.message.message_id,
-                                         reply_markup=get_spec_classroom_keyboard(classroom))
+        await handle_spec_created_classroom_query(call)
+
+    elif SHOW_CLASSROOM_PARTICIPANTS.has_that_callback(call.data):
+        await handle_show_classroom_participants_query(call)
+
 
     # CURRENT TESTS
 
@@ -190,6 +189,25 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
 
     elif CURRENT_ENDED_OR_WITH_NO_ATTEMPTS_TESTS.has_that_callback(call.data):
         await handle_current_ended_or_with_no_attempts_tests_query(call)
+
+
+async def handle_show_classroom_participants_query(call: types.CallbackQuery) -> None:
+    classroom_id = get_test_id_or_classroom_id_from_callback(call.data)
+    classroom = await db_manager.get_classroom_by_id(classroom_id)
+    participants = await db_manager.get_users_in_classroom(classroom_id)
+    participants_text = "\n".join([f"{p.name} - @{p.username}" for p in participants])
+    msg = f"classroom \"{classroom.title}\" participants:\n" + participants_text
+    await call.bot.edit_message_text(msg, call.from_user.id, call.message.message_id,
+                                     reply_markup=go_to_previous_menu_keyboard(SPEC_CREATED_CLASSROOM, [classroom_id]))
+
+
+async def handle_spec_created_classroom_query(call: types.CallbackQuery):
+    classroom_id = get_test_id_or_classroom_id_from_callback(call.data)
+    classroom = await db_manager.get_classroom_by_id(classroom_id)
+    await call.bot.edit_message_text(f"classroom title: {classroom.title}\n"
+                                     f"link: {generate_link(Entity.CLASSROOM, classroom.uuid)}",
+                                     call.from_user.id, call.message.message_id,
+                                     reply_markup=get_spec_classroom_keyboard(classroom))
 
 
 async def handle_spec_share_test_link_to_classroom_query(call: types.CallbackQuery) -> None:
@@ -208,7 +226,6 @@ async def send_test_to_classroom_participants(test_id: int, classroom_id: int, b
 
 
 async def handle_share_test_link_to_classroom_query(call: types.CallbackQuery) -> None:
-    test_id = get_test_id_or_classroom_id_from_callback(call.data)
     classrooms = await db_manager.get_classrooms_by_author_id(call.from_user.id)
     if len(classrooms) == 0:
         text = "you have no classrooms yet. But u can create a new one"

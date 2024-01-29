@@ -34,6 +34,7 @@ def get_created_classrooms_keyboard(classrooms: list[Classroom]):
 
 def get_spec_classroom_keyboard(classroom: Classroom):
     inline_keyboard = [
+        [SHOW_CLASSROOM_PARTICIPANTS.get_button(parameters=[classroom.id])],
         [DELETE_CLASSROOM.get_button(parameters=[classroom.id])],
         [AUTHORS_CLASSROOMS.get_button(new_text=GO_TO_PREVIOUS_MENU_TEXT)],
     ]
@@ -146,5 +147,12 @@ def get_back_to_main_menu_keyboard():
 def get_go_to_main_menu_keyboard():
     inline_keyboard = [
         [GO_TO_MAIN_MENU_BUTTON],
+    ]
+    return types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
+
+
+def go_to_previous_menu_keyboard(button: Button, parameters: list[Any]):
+    inline_keyboard = [
+        [button.get_button(parameters=parameters, new_text=GO_TO_PREVIOUS_MENU_TEXT)],
     ]
     return types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)

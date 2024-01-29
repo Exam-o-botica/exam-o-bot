@@ -50,6 +50,8 @@ CREATE_CLASSROOM = Button(name='CREATE_CLASSROOM', text='add classroom')
 
 DELETE_CLASSROOM = Button(name='DELETE_CLASSROOM', text='delete classroom')
 
+SHOW_CLASSROOM_PARTICIPANTS = Button(name='SHOW_CLASSROOM_PARTICIPANTS', text='show participants')
+
 # created Tests
 
 AUTHORS_TESTS = Button(name='AUTHORS_TESTS', text='created tests')
