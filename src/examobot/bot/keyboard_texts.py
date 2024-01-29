@@ -40,6 +40,8 @@ BACK_TO_MAIN_MENU = Button(name='BACK_TO_MAIN_MENU', text='back to main menu')
 
 ### FOR AUTHORS ###
 
+DELETE_ENTITY_CONFIRM = Button(name='DELETE_ENTITY_CONFIRM', text='delete')
+
 # Classrooms
 
 AUTHORS_CLASSROOMS = Button(name='AUTHORS_CLASSROOMS', text='my classrooms')

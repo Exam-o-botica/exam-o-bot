@@ -1,10 +1,15 @@
 from aiogram import types
 
 from keyboard_texts import *
+from Entity import Entity
 from src.examobot.db.tables import *
 
 BACK_TO_MAIN_MENU_BUTTON = BACK_TO_MAIN_MENU.get_button()
 GO_TO_MAIN_MENU_BUTTON = BACK_TO_MAIN_MENU.get_button(new_text=GO_TO_MAIN_MENU_TEXT)
+
+
+def get_button_to_prev_menu(button: Button, parameters: list[Any], new_text: str = GO_TO_PREVIOUS_MENU_TEXT):
+    return button.get_button(parameters=parameters, new_text=new_text)
 
 
 # AUTHOR'S KEYBOARDS #
@@ -15,6 +20,14 @@ def get_authors_buttons_():
         [AUTHORS_TESTS.get_button()],
     ]
     return inline_keyboard
+
+
+def get_delete_entity_confirm_keyboard(entity: Entity, entity_id: int):
+    inline_keyboard = [
+        [DELETE_ENTITY_CONFIRM.get_button(parameters=[entity.name, entity_id])],
+        [get_button_to_prev_menu(button=SPEC_CREATED_CLASSROOM, parameters=[entity_id], new_text='cancel')],
+    ]
+    return types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
 
 
 # CREATED CLASSROOMS

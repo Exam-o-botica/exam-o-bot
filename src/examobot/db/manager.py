@@ -90,6 +90,35 @@ class DBManager:
 
         return new_test
 
+    async def add_classroom(self, author_id: int, title: str):
+        new_classroom = Classroom(
+            uuid=str(uuid.uuid4()),
+            title=title,
+            author_id=author_id,
+        )
+
+        async with self.session_maker() as session:
+            session.add(new_classroom)
+            await session.commit()
+
+        return new_classroom
+
+    async def delete_classroom(self, classroom_id: int):
+        classroom = await self.get_classroom_by_id(classroom_id)
+        query2 = select(UserClassroomParticipation).where(UserClassroomParticipation.classroom_id == classroom_id)
+        async with self.session_maker() as session:
+            # res1 = await session.execute(query1)
+            res2 = await session.execute(query2)
+            items = res2.scalars().all()
+            for i in items:
+                await session.delete(i)
+            # classrooms, user_classrooms = res1.scalars().all(), res2.scalars().all()
+            # for i in cl
+            # map(session.delete, classrooms)
+            # map(session.delete, user_classrooms)
+            await session.delete(classroom)
+            await session.commit()
+
     async def get_classroom_by_uuid(self, classroom_uuid: str) -> Classroom:
         query = select(Classroom).where(Classroom.uuid == classroom_uuid)
         async with self.session_maker() as session:
@@ -138,19 +167,6 @@ class DBManager:
             new_user_classroom = UserClassroomParticipation(user_id=user_id, classroom_id=classroom_id)
             session.add(new_user_classroom)
             await session.commit()
-
-    async def add_classroom(self, author_id: int, title: str):
-        new_classroom = Classroom(
-            uuid=str(uuid.uuid4()),
-            title=title,
-            author_id=author_id,
-        )
-
-        async with self.session_maker() as session:
-            session.add(new_classroom)
-            await session.commit()
-
-        return new_classroom
 
     async def get_users_in_classroom(self, classroom_id: int):
         query = select(User).join(UserClassroomParticipation).where(

@@ -16,6 +16,7 @@ from aiogram.types import Message
 
 from consts import *
 from keyboards import *
+from Entity import Entity
 from src.examobot.db.manager import DBManager
 from src.examobot.form_handlers import *
 
@@ -34,11 +35,6 @@ class Form(StatesGroup):
     test_attempts_number = State()
     test_link = State()
     test_save = State()
-
-
-class Entity(Enum):
-    TEST = "test"
-    CLASSROOM = "classroom"
 
 
 '''
@@ -177,6 +173,12 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
     elif SHOW_CLASSROOM_PARTICIPANTS.has_that_callback(call.data):
         await handle_show_classroom_participants_query(call)
 
+    elif DELETE_CLASSROOM.has_that_callback(call.data):
+        await handle_delete_classroom_query(call)
+
+    elif DELETE_ENTITY_CONFIRM.has_that_callback(call.data):
+        await handle_delete_entity_confirm_query(call)
+
 
     # CURRENT TESTS
 
@@ -189,6 +191,29 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
 
     elif CURRENT_ENDED_OR_WITH_NO_ATTEMPTS_TESTS.has_that_callback(call.data):
         await handle_current_ended_or_with_no_attempts_tests_query(call)
+
+
+async def handle_delete_classroom_query(call: types.CallbackQuery) -> None:
+    classroom_id = get_test_id_or_classroom_id_from_callback(call.data)
+    classroom = await db_manager.get_classroom_by_id(classroom_id)
+    await call.bot.edit_message_text(f"are you sure you wanna delete classroom \"{classroom.title}\"?",
+                                     call.from_user.id, call.message.message_id,
+                                     reply_markup=get_delete_entity_confirm_keyboard(Entity.CLASSROOM, classroom_id))
+
+
+async def delete_classroom(classroom_id: int):
+    await db_manager.delete_classroom(classroom_id)
+
+
+async def handle_delete_entity_confirm_query(call: types.CallbackQuery) -> None:
+    entity, entity_id = call.data.split("#")[1:]
+    print('here,', entity, Entity.CLASSROOM.value, Entity.CLASSROOM.name, Entity.CLASSROOM)
+    if entity == Entity.CLASSROOM.name:
+        await delete_classroom(int(entity_id))
+    else:
+        pass  # todo delete test
+    await call.bot.edit_message_text(f"{entity} successfully deleted", call.from_user.id, call.message.message_id,
+                                     reply_markup=get_go_to_main_menu_keyboard())
 
 
 async def handle_show_classroom_participants_query(call: types.CallbackQuery) -> None:
@@ -207,6 +232,10 @@ async def handle_show_classroom_participants_query(call: types.CallbackQuery) ->
 async def handle_spec_created_classroom_query(call: types.CallbackQuery):
     classroom_id = get_test_id_or_classroom_id_from_callback(call.data)
     classroom = await db_manager.get_classroom_by_id(classroom_id)
+    if not classroom:
+        await call.bot.edit_message_text("this classroom was deleted", call.from_user.id, call.message.message_id,
+                                         reply_markup=get_go_to_main_menu_keyboard())
+        return
     await call.bot.edit_message_text(f"classroom title: {classroom.title}\n"
                                      f"link: {generate_link(Entity.CLASSROOM, classroom.uuid)}",
                                      call.from_user.id, call.message.message_id,
