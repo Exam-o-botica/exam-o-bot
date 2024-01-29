@@ -196,7 +196,10 @@ async def handle_show_classroom_participants_query(call: types.CallbackQuery) ->
     classroom = await db_manager.get_classroom_by_id(classroom_id)
     participants = await db_manager.get_users_in_classroom(classroom_id)
     participants_text = "\n".join([f"{p.name} - @{p.username}" for p in participants])
-    msg = f"classroom \"{classroom.title}\" participants:\n" + participants_text
+    if len(participants) == 0:
+        msg = "no participants yet"
+    else:
+        msg = f"classroom \"{classroom.title}\" participants:\n" + participants_text
     await call.bot.edit_message_text(msg, call.from_user.id, call.message.message_id,
                                      reply_markup=go_to_previous_menu_keyboard(SPEC_CREATED_CLASSROOM, [classroom_id]))
 
