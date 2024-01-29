@@ -32,14 +32,23 @@ def get_delete_entity_confirm_keyboard(entity: Entity, entity_id: int):
 
 # CREATED CLASSROOMS
 
-def get_created_classrooms_keyboard(classrooms: list[Classroom]):
+def get_classrooms_keyboard(classrooms: list[Classroom], classroom_type: str = 'created'):
+    if classroom_type == 'created':
+        btn = SPEC_CREATED_CLASSROOM
+        create_classroom_btn = [CREATE_CLASSROOM.get_button()]
+    elif classroom_type == 'current':
+        btn = SPEC_CURRENT_CLASSROOM
+        create_classroom_btn = []
+    else:
+        raise ValueError(f'Unknown classroom type: {classroom_type}, expected "created" or "current"')
+
     classrooms_list = [
-        [SPEC_CREATED_CLASSROOM.get_button(new_text=clm.title, parameters=[clm.id])] for clm in classrooms
+        [btn.get_button(new_text=clm.title, parameters=[clm.id])] for clm in classrooms
     ]
 
     inline_keyboard = [
         *classrooms_list,
-        [CREATE_CLASSROOM.get_button()],
+        create_classroom_btn,
         [BACK_TO_MAIN_MENU_BUTTON],
     ]
     return types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
@@ -140,6 +149,7 @@ def get_current_tests_keyboard(tests: list[Test]):
 def get_respondent_buttons_():
     inline_keyboard = [
         [CURRENT_TESTS.get_button()],
+        [CURRENT_CLASSROOMS.get_button()],
     ]
     return inline_keyboard
 

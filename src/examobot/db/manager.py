@@ -200,6 +200,15 @@ class DBManager:
 
         return tasks.scalars().all()
 
+    # CURRENT CLASSROOMS
+
+    async def get_current_classrooms_by_user_id(self, user_id: int):
+        query = (
+            select(Classroom).join(UserClassroomParticipation).where(UserClassroomParticipation.user_id == user_id))
+        async with self.session_maker() as session:
+            classrooms = await session.execute(query)
+        return classrooms.scalars().all()
+
 #
 # async def initial_add(self):
 #     async with self.session_maker() as session:

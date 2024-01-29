@@ -81,9 +81,13 @@ async def welcome_message(message: types.Message, command: CommandObject) -> Non
 
             await db_manager.add_user_to_classroom(classroom.id,
                                                    message.from_user.id)
+
             await message.bot.send_message(message.from_user.id,
                                            SUCCESSFULLY_ADDED_TO_CLASSROOM.format(classroom.title),
                                            reply_markup=get_go_to_main_menu_keyboard())
+
+            await send_message_to_user(message.bot, classroom.author_id,
+                                       f"user @{message.from_user.username} joined your classroom \"{classroom.title}\"")
 
         elif valid_link(args, "test"):
             test_uuid = args.split("=")[1]
@@ -179,6 +183,9 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
     elif DELETE_ENTITY_CONFIRM.has_that_callback(call.data):
         await handle_delete_entity_confirm_query(call)
 
+    elif CURRENT_CLASSROOMS.has_that_callback(call.data):
+        await handle_current_classrooms_query(call)
+
 
     # CURRENT TESTS
 
@@ -191,6 +198,16 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
 
     elif CURRENT_ENDED_OR_WITH_NO_ATTEMPTS_TESTS.has_that_callback(call.data):
         await handle_current_ended_or_with_no_attempts_tests_query(call)
+
+
+async def handle_current_classrooms_query(call: types.CallbackQuery) -> None:
+    current_classrooms = await db_manager.get_current_classrooms_by_user_id(call.from_user.id)
+    if len(current_classrooms) == 0:
+        text = "you don't have current classrooms"
+    else:
+        text = "your current classrooms"
+    await call.bot.edit_message_text(text, call.from_user.id, call.message.message_id,
+                                     reply_markup=get_classrooms_keyboard(current_classrooms, 'current'))
 
 
 async def handle_delete_classroom_query(call: types.CallbackQuery) -> None:
@@ -264,7 +281,7 @@ async def handle_share_test_link_to_classroom_query(call: types.CallbackQuery) -
     else:
         text = "choose classroom"
     await call.bot.edit_message_text(text, call.from_user.id, call.message.message_id,
-                                     reply_markup=get_created_classrooms_keyboard(classrooms))
+                                     reply_markup=get_classrooms_keyboard(classrooms))
     # await call.bot.answer_callback_query(call.id)
 
 
@@ -459,7 +476,7 @@ async def create_classroom(call: types.CallbackQuery) -> None:
     await db_manager.add_classroom(title="title cls", author_id=call.from_user.id)
     classrooms = await db_manager.get_classrooms_by_author_id(call.from_user.id)
     await call.bot.edit_message_text("classroom created", call.from_user.id, call.message.message_id,
-                                     reply_markup=get_created_classrooms_keyboard(classrooms))
+                                     reply_markup=get_classrooms_keyboard(classrooms))
 
 
 async def handle_authors_classrooms_query(call: types.CallbackQuery) -> None:
@@ -469,7 +486,7 @@ async def handle_authors_classrooms_query(call: types.CallbackQuery) -> None:
     else:
         text = "classrooms you have created"
     await call.bot.edit_message_text(text, call.from_user.id, call.message.message_id,
-                                     reply_markup=get_created_classrooms_keyboard(authors_classrooms))
+                                     reply_markup=get_classrooms_keyboard(authors_classrooms))
 
 
 async def handle_authors_tests_query(call: types.CallbackQuery) -> None:

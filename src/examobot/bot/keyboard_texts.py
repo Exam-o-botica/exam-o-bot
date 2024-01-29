@@ -44,7 +44,7 @@ DELETE_ENTITY_CONFIRM = Button(name='DELETE_ENTITY_CONFIRM', text='delete')
 
 # Classrooms
 
-AUTHORS_CLASSROOMS = Button(name='AUTHORS_CLASSROOMS', text='my classrooms')
+AUTHORS_CLASSROOMS = Button(name='AUTHORS_CLASSROOMS', text='created classrooms')
 
 SPEC_CREATED_CLASSROOM = Button(name='SPEC_CREATED_CLASSROOM', text='specific classroom')
 
@@ -74,6 +74,14 @@ SHARE_TEST_LINK_TO_CLASSROOM = Button(name='SHARE_TEST_LINK_TO_CLASSROOM', text=
 
 SPEC_SHARE_TEST_LINK_TO_CLASSROOM = Button(name='SPEC_SHARE_TEST_LINK_TO_CLASSROOM',
                                            text='specific share link to classroom')
+
+### FOR PARTICIPANTS ###
+
+CURRENT_CLASSROOMS = Button(name='CURRENT_CLASSROOMS', text='current classrooms')
+
+SPEC_CURRENT_CLASSROOM = Button(name='SPEC_CURRENT_CLASSROOM', text='specific current classroom')
+
+# current Classrooms
 
 # current tests
 
