@@ -1,7 +1,6 @@
 import json
 import re
 import socket
-from pprint import pprint
 from typing import Optional
 
 from apiclient import discovery
@@ -9,7 +8,7 @@ from googleapiclient import errors
 from httplib2 import Http
 from oauth2client import client, file, tools
 
-from src.examobot.definitions import GOOGLE_SCRIPT_ID, GOOGLE_CLIENT_SECRETS
+from src.examobot.definitions import GOOGLE_CLIENT_SECRETS
 
 socket.setdefaulttimeout(120)
 
@@ -18,11 +17,15 @@ DISCOVERY_DOC = "https://forms.googleapis.com/$discovery/rest?version=v1"
 store = file.Storage("token.json")
 
 
+# TODO: 2. Parse every question to message
+# TODO: 3. Send answer to GoogleForm
+
+
 class FormExtractor:
     @staticmethod
-    def _login(client_secrets):
+    def _login():
         try:
-            creds = None
+            creds = store.get()
             if not creds or creds.invalid:
                 flow = client.flow_from_clientsecrets(str(GOOGLE_CLIENT_SECRETS), SCOPES)
                 creds = tools.run_flow(flow, store)
@@ -36,11 +39,11 @@ class FormExtractor:
             )
             return service
         except Exception as e:
-            pprint(f'Login failure: {e}')
-            return None
+            e.add_note("Login failure")
+            raise
 
     @staticmethod
-    def _get_form_id_from_url(url: str) -> str | None:
+    def _get_form_id_from_url(url: str) -> str:
         # Define a regular expression pattern to match the form ID
         pattern = r'/forms/d/([a-zA-Z0-9-_]+)'
 
@@ -48,29 +51,26 @@ class FormExtractor:
         match = re.search(pattern, url)
 
         # Check if a match is found and return the form ID
-        if match:
-            form_id = match.group(1)
-            return form_id
-        else:
-            # Return None if no match is found
-            return None
+        assert match, f"Given URL is incorrect: ${url}"
+        form_id = match.group(1)
+        return form_id
 
     @staticmethod
-    def _get_json(service, script_id, form_url):
+    def _get_json(service, form_url: str) -> dict:
+        form_id = "NOT_SET"
         try:
             form_id = FormExtractor._get_form_id_from_url(form_url)
             res_json = service.forms().get(formId=form_id).execute()
             return res_json
         except Exception as e:
-            pprint(f'Script failure: {e}')
-            return None
+            e.add_note(f"Google Forms API Error: get() couldn't find the needed id of form: {form_id}")
+            raise
 
-    # TODO: extract is a public method everything else is private
     @staticmethod
     async def extract(form_url: str) -> Optional[str]:
         try:
-            service = FormExtractor._login(None)
-            res = FormExtractor._get_json(service, GOOGLE_SCRIPT_ID, form_url)
+            service = FormExtractor._login()
+            res = FormExtractor._get_json(service, form_url)
             return json.dumps(res, ensure_ascii=False, indent=4)
         except (errors.HttpError,):
             return None
