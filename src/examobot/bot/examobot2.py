@@ -16,6 +16,7 @@ from aiogram.types import Message
 
 from consts import *
 from keyboards import *
+from Entity import Entity
 from src.examobot.db.manager import DBManager
 from src.examobot.form_handlers import *
 
@@ -34,11 +35,6 @@ class Form(StatesGroup):
     test_attempts_number = State()
     test_link = State()
     test_save = State()
-
-
-class Entity(Enum):
-    TEST = "test"
-    CLASSROOM = "classroom"
 
 
 '''
@@ -85,9 +81,13 @@ async def welcome_message(message: types.Message, command: CommandObject) -> Non
 
             await db_manager.add_user_to_classroom(classroom.id,
                                                    message.from_user.id)
+
             await message.bot.send_message(message.from_user.id,
                                            SUCCESSFULLY_ADDED_TO_CLASSROOM.format(classroom.title),
                                            reply_markup=get_go_to_main_menu_keyboard())
+
+            await send_message_to_user(message.bot, classroom.author_id,
+                                       f"user @{message.from_user.username} joined your classroom \"{classroom.title}\"")
 
         elif valid_link(args, "test"):
             test_uuid = args.split("=")[1]
@@ -172,12 +172,22 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
         await handle_spec_share_test_link_to_classroom_query(call)
 
     elif SPEC_CREATED_CLASSROOM.has_that_callback(call.data):
-        classroom_id = get_test_id_or_classroom_id_from_callback(call.data)
-        classroom = await db_manager.get_classroom_by_id(classroom_id)
-        await call.bot.edit_message_text(f"classroom title: {classroom.title}\n"
-                                         f"link: {generate_link(Entity.CLASSROOM, classroom.uuid)}",
-                                         call.from_user.id, call.message.message_id,
-                                         reply_markup=get_spec_classroom_keyboard(classroom))
+        await handle_spec_created_classroom_query(call)
+
+    elif SHOW_CLASSROOM_PARTICIPANTS.has_that_callback(call.data):
+        await handle_show_classroom_participants_query(call)
+
+    elif DELETE_CLASSROOM.has_that_callback(call.data):
+        await handle_delete_classroom_query(call)
+
+    elif DELETE_ENTITY_CONFIRM.has_that_callback(call.data):
+        await handle_delete_entity_confirm_query(call)
+
+    elif CLOSE_TEST.has_that_callback(call.data):
+        await handle_change_test_status_query(call, TestStatus.UNAVAILABLE)
+
+    elif OPEN_TEST.has_that_callback(call.data):
+        await handle_change_test_status_query(call, TestStatus.AVAILABLE)
 
     # CURRENT TESTS
 
@@ -190,6 +200,103 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
 
     elif CURRENT_ENDED_OR_WITH_NO_ATTEMPTS_TESTS.has_that_callback(call.data):
         await handle_current_ended_or_with_no_attempts_tests_query(call)
+
+    # CURRENT CLASSROOMS
+
+    elif CURRENT_CLASSROOMS.has_that_callback(call.data):
+        await handle_current_classrooms_query(call)
+
+    elif SPEC_CURRENT_CLASSROOM.has_that_callback(call.data):
+        await handle_spec_current_classroom_query(call)
+
+
+async def handle_change_test_status_query(call: types.CallbackQuery, new_status: TestStatus) -> None:
+    test_id = get_test_id_or_classroom_id_from_callback(call.data)
+    test = await db_manager.get_test_by_id(test_id)
+    updated_values = {'status_set_by_author': new_status}
+    await db_manager.update_test_by_id(test_id, **updated_values)
+
+    # todo don't need to invoke get_spec_test_info_message, hjust change msg to make it quicker
+
+    await call.bot.edit_message_text(get_spec_test_info_message(test),
+                                     call.from_user.id, call.message.message_id,
+                                     reply_markup=get_spec_created_test_keyboard(test),
+                                     parse_mode="HTML")
+
+
+async def handle_spec_current_classroom_query(call: types.CallbackQuery):
+    classroom_id = get_test_id_or_classroom_id_from_callback(call.data)
+    classroom = await db_manager.get_classroom_by_id(classroom_id)
+    if not classroom:
+        await call.bot.edit_message_text("this classroom was deleted", call.from_user.id, call.message.message_id,
+                                         reply_markup=get_go_to_main_menu_keyboard())
+        return
+    author = await db_manager.get_user_by_id(classroom.author_id)
+
+    msg = f"classroom title: {classroom.title}\n" \
+          f"author: {author.name} - @{author.username}\n"
+
+    await call.bot.edit_message_text(msg, call.from_user.id, call.message.message_id,
+                                     reply_markup=go_to_previous_menu_keyboard(CURRENT_CLASSROOMS))
+
+
+async def handle_current_classrooms_query(call: types.CallbackQuery) -> None:
+    current_classrooms = await db_manager.get_current_classrooms_by_user_id(call.from_user.id)
+    if len(current_classrooms) == 0:
+        text = "you don't have current classrooms"
+    else:
+        text = "your current classrooms"
+    await call.bot.edit_message_text(text, call.from_user.id, call.message.message_id,
+                                     reply_markup=get_classrooms_keyboard(current_classrooms, 'current'))
+
+
+async def handle_delete_classroom_query(call: types.CallbackQuery) -> None:
+    classroom_id = get_test_id_or_classroom_id_from_callback(call.data)
+    classroom = await db_manager.get_classroom_by_id(classroom_id)
+    await call.bot.edit_message_text(f"are you sure you wanna delete classroom \"{classroom.title}\"?",
+                                     call.from_user.id, call.message.message_id,
+                                     reply_markup=get_delete_entity_confirm_keyboard(Entity.CLASSROOM, classroom_id))
+
+
+async def delete_classroom(classroom_id: int):
+    await db_manager.delete_classroom(classroom_id)
+
+
+async def handle_delete_entity_confirm_query(call: types.CallbackQuery) -> None:
+    entity, entity_id = call.data.split("#")[1:]
+    print('here,', entity, Entity.CLASSROOM.value, Entity.CLASSROOM.name, Entity.CLASSROOM)
+    if entity == Entity.CLASSROOM.name:
+        await delete_classroom(int(entity_id))
+    else:
+        pass  # todo delete test
+    await call.bot.edit_message_text(f"{entity} successfully deleted", call.from_user.id, call.message.message_id,
+                                     reply_markup=get_go_to_main_menu_keyboard())
+
+
+async def handle_show_classroom_participants_query(call: types.CallbackQuery) -> None:
+    classroom_id = get_test_id_or_classroom_id_from_callback(call.data)
+    classroom = await db_manager.get_classroom_by_id(classroom_id)
+    participants = await db_manager.get_users_in_classroom(classroom_id)
+    participants_text = "\n".join([f"{p.name} - @{p.username}" for p in participants])
+    if len(participants) == 0:
+        msg = "no participants yet"
+    else:
+        msg = f"classroom \"{classroom.title}\" participants:\n" + participants_text
+    await call.bot.edit_message_text(msg, call.from_user.id, call.message.message_id,
+                                     reply_markup=go_to_previous_menu_keyboard(SPEC_CREATED_CLASSROOM, [classroom_id]))
+
+
+async def handle_spec_created_classroom_query(call: types.CallbackQuery):
+    classroom_id = get_test_id_or_classroom_id_from_callback(call.data)
+    classroom = await db_manager.get_classroom_by_id(classroom_id)
+    if not classroom:
+        await call.bot.edit_message_text("this classroom was deleted", call.from_user.id, call.message.message_id,
+                                         reply_markup=get_go_to_main_menu_keyboard())
+        return
+    await call.bot.edit_message_text(f"classroom title: {classroom.title}\n"
+                                     f"link: {generate_link(Entity.CLASSROOM, classroom.uuid)}",
+                                     call.from_user.id, call.message.message_id,
+                                     reply_markup=get_spec_classroom_keyboard(classroom))
 
 
 async def handle_spec_share_test_link_to_classroom_query(call: types.CallbackQuery) -> None:
@@ -208,14 +315,13 @@ async def send_test_to_classroom_participants(test_id: int, classroom_id: int, b
 
 
 async def handle_share_test_link_to_classroom_query(call: types.CallbackQuery) -> None:
-    test_id = get_test_id_or_classroom_id_from_callback(call.data)
     classrooms = await db_manager.get_classrooms_by_author_id(call.from_user.id)
     if len(classrooms) == 0:
         text = "you have no classrooms yet. But u can create a new one"
     else:
         text = "choose classroom"
     await call.bot.edit_message_text(text, call.from_user.id, call.message.message_id,
-                                     reply_markup=get_created_classrooms_keyboard(classrooms))
+                                     reply_markup=get_classrooms_keyboard(classrooms))
     # await call.bot.answer_callback_query(call.id)
 
 
@@ -239,7 +345,7 @@ async def handle_current_ended_or_with_no_attempts_tests_query(call: types.Callb
     current_ended_or_with_no_attempts_tests = await db_manager.get_current_ended_or_with_no_attempts_tests_by_user_id(
         call.from_user.id)
     if len(current_ended_or_with_no_attempts_tests) == 0:
-        text = "you don't have ended tests"
+        text = "you don't have ended tests or they have been deleted by author"
     else:
         text = "your ended tests"
     await call.bot.edit_message_text(text, call.from_user.id, call.message.message_id,
@@ -262,7 +368,7 @@ def get_spec_test_info_message(test: Test) -> str:
     <b>Test duration:</b> {test.time} min
     <b>Test deadline:</b> {test.deadline}
     <b>Test attempts number:</b> {test.attempts_number}
-    <b>Test status:</b> {test.status_set_by_author}
+    <b>Test status:</b> {test.status_set_by_author} {get_emoji_test_status(test.status_set_by_author)}
     <b>Test link:</b> {test.link}"""
     return msg
 
@@ -410,7 +516,7 @@ async def create_classroom(call: types.CallbackQuery) -> None:
     await db_manager.add_classroom(title="title cls", author_id=call.from_user.id)
     classrooms = await db_manager.get_classrooms_by_author_id(call.from_user.id)
     await call.bot.edit_message_text("classroom created", call.from_user.id, call.message.message_id,
-                                     reply_markup=get_created_classrooms_keyboard(classrooms))
+                                     reply_markup=get_classrooms_keyboard(classrooms))
 
 
 async def handle_authors_classrooms_query(call: types.CallbackQuery) -> None:
@@ -420,7 +526,7 @@ async def handle_authors_classrooms_query(call: types.CallbackQuery) -> None:
     else:
         text = "classrooms you have created"
     await call.bot.edit_message_text(text, call.from_user.id, call.message.message_id,
-                                     reply_markup=get_created_classrooms_keyboard(authors_classrooms))
+                                     reply_markup=get_classrooms_keyboard(authors_classrooms))
 
 
 async def handle_authors_tests_query(call: types.CallbackQuery) -> None:

@@ -40,15 +40,19 @@ BACK_TO_MAIN_MENU = Button(name='BACK_TO_MAIN_MENU', text='back to main menu')
 
 ### FOR AUTHORS ###
 
+DELETE_ENTITY_CONFIRM = Button(name='DELETE_ENTITY_CONFIRM', text='delete')
+
 # Classrooms
 
-AUTHORS_CLASSROOMS = Button(name='AUTHORS_CLASSROOMS', text='my classrooms')
+AUTHORS_CLASSROOMS = Button(name='AUTHORS_CLASSROOMS', text='created classrooms')
 
 SPEC_CREATED_CLASSROOM = Button(name='SPEC_CREATED_CLASSROOM', text='specific classroom')
 
 CREATE_CLASSROOM = Button(name='CREATE_CLASSROOM', text='add classroom')
 
 DELETE_CLASSROOM = Button(name='DELETE_CLASSROOM', text='delete classroom')
+
+SHOW_CLASSROOM_PARTICIPANTS = Button(name='SHOW_CLASSROOM_PARTICIPANTS', text='show participants')
 
 # created Tests
 
@@ -60,16 +64,26 @@ CREATE_TEST = Button(name='CREATE_TEST', text='add test')
 
 CLOSE_TEST = Button(name='CLOSE_TEST', text='close test')
 
+OPEN_TEST = Button(name='OPEN_TEST', text='open test')
+
 REFRESH_TEST_DATA = Button(name='REFRESH_TEST_DATA', text='refresh test data')
 
 EDIT_TEST = Button(name='EDIT_TEST', text='edit test')
 
-SHARE_TEST_LINK = Button(name='SHARE_TEST_LINK', text='share test link')
+SHARE_TEST_LINK = Button(name='SHARE_TEST_LINK', text='send test to classroom')
 
 SHARE_TEST_LINK_TO_CLASSROOM = Button(name='SHARE_TEST_LINK_TO_CLASSROOM', text='send test to classroom')
 
 SPEC_SHARE_TEST_LINK_TO_CLASSROOM = Button(name='SPEC_SHARE_TEST_LINK_TO_CLASSROOM',
                                            text='specific share link to classroom')
+
+### FOR PARTICIPANTS ###
+
+CURRENT_CLASSROOMS = Button(name='CURRENT_CLASSROOMS', text='current classrooms')
+
+SPEC_CURRENT_CLASSROOM = Button(name='SPEC_CURRENT_CLASSROOM', text='specific current classroom')
+
+# current Classrooms
 
 # current tests
 

@@ -52,7 +52,7 @@ class User(Base):
     await_status: Mapped[str] = mapped_column(nullable=True, default=None)
 
     answers: Mapped[List["Answer"]] = relationship(back_populates="user", cascade="all,delete")  # Parent
-      
+
     created_classrooms: Mapped[List["Classroom"]] = relationship(
         back_populates="author",  # todo maybe we need uselist=True here, maybe not, who knows
         cascade="all,delete")  # Parent
@@ -104,7 +104,7 @@ class UserClassroomParticipation(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     user_id: Column = Column(ForeignKey("users.id"), nullable=False)
-    classroom_id: Mapped[int] = mapped_column(ForeignKey("classrooms.id"), nullable=False)
+    classroom_id: Mapped[int] = mapped_column(ForeignKey("classrooms.id"), nullable=False, )
 
 
 class Task(Base):
