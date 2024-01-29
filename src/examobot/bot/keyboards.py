@@ -1,7 +1,7 @@
 from aiogram import types
 
 from keyboard_texts import *
-from Entity import Entity
+from entity import Entity
 from src.examobot.db.tables import *
 
 BACK_TO_MAIN_MENU_BUTTON = BACK_TO_MAIN_MENU.get_button()
