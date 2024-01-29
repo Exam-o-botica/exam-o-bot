@@ -17,7 +17,7 @@ socket.setdefaulttimeout(120)
 
 class FormExtractor:
     @staticmethod
-    def login(config):
+    def _login(config):
         try:
             creds = None
             token_file = os.path.join(
@@ -47,7 +47,7 @@ class FormExtractor:
             return None
 
     @staticmethod
-    def get_json(service, script_id, form_url):
+    def _get_json(service, script_id, form_url):
         try:
             body = {
                 "function": "main",
@@ -61,14 +61,15 @@ class FormExtractor:
             pprint(f'Script failure: {e}')
             return None
 
+    # TODO: extract is a public method everything else is private
     @staticmethod
     async def extract(form_url: str) -> Optional[str]:
         try:
             with open(GOOGLE_CONFIG_FILE, "r") as f:
                 config = json.load(f)
 
-            service = FormExtractor.login(config)
-            meta_data = FormExtractor.get_json(service, GOOGLE_SCRIPT_ID, form_url)
+            service = FormExtractor._login(config)
+            meta_data = FormExtractor._get_json(service, GOOGLE_SCRIPT_ID, form_url)
             return meta_data
         except (errors.HttpError,):
             return None
