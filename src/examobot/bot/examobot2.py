@@ -183,6 +183,12 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
     elif DELETE_ENTITY_CONFIRM.has_that_callback(call.data):
         await handle_delete_entity_confirm_query(call)
 
+    elif CLOSE_TEST.has_that_callback(call.data):
+        await handle_change_test_status_query(call, TestStatus.UNAVAILABLE)
+
+    elif OPEN_TEST.has_that_callback(call.data):
+        await handle_change_test_status_query(call, TestStatus.AVAILABLE)
+
     # CURRENT TESTS
 
     elif CURRENT_TESTS.has_that_callback(call.data):
@@ -202,6 +208,20 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
 
     elif SPEC_CURRENT_CLASSROOM.has_that_callback(call.data):
         await handle_spec_current_classroom_query(call)
+
+
+async def handle_change_test_status_query(call: types.CallbackQuery, new_status: TestStatus) -> None:
+    test_id = get_test_id_or_classroom_id_from_callback(call.data)
+    test = await db_manager.get_test_by_id(test_id)
+    updated_values = {'status_set_by_author': new_status}
+    await db_manager.update_test_by_id(test_id, **updated_values)
+
+    # todo don't need to invoke get_spec_test_info_message, hjust change msg to make it quicker
+
+    await call.bot.edit_message_text(get_spec_test_info_message(test),
+                                     call.from_user.id, call.message.message_id,
+                                     reply_markup=get_spec_created_test_keyboard(test),
+                                     parse_mode="HTML")
 
 
 async def handle_spec_current_classroom_query(call: types.CallbackQuery):
@@ -348,7 +368,7 @@ def get_spec_test_info_message(test: Test) -> str:
     <b>Test duration:</b> {test.time} min
     <b>Test deadline:</b> {test.deadline}
     <b>Test attempts number:</b> {test.attempts_number}
-    <b>Test status:</b> {test.status_set_by_author}
+    <b>Test status:</b> {test.status_set_by_author} {get_emoji_test_status(test.status_set_by_author)}
     <b>Test link:</b> {test.link}"""
     return msg
 

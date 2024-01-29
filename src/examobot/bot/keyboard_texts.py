@@ -64,6 +64,8 @@ CREATE_TEST = Button(name='CREATE_TEST', text='add test')
 
 CLOSE_TEST = Button(name='CLOSE_TEST', text='close test')
 
+OPEN_TEST = Button(name='OPEN_TEST', text='open test')
+
 REFRESH_TEST_DATA = Button(name='REFRESH_TEST_DATA', text='refresh test data')
 
 EDIT_TEST = Button(name='EDIT_TEST', text='edit test')

@@ -90,8 +90,9 @@ def get_created_tests_keyboard(tests: list[Test]):
 
 
 def get_spec_created_test_keyboard(test: Test):
+    action = CLOSE_TEST if test.status_set_by_author == TestStatus.AVAILABLE else OPEN_TEST
     inline_keyboard = [
-        [CLOSE_TEST.get_button(parameters=[test.id])],
+        [action.get_button(parameters=[test.id])],
         [REFRESH_TEST_DATA.get_button(parameters=[test.id])],
         [EDIT_TEST.get_button(parameters=[test.id])],
         [SHARE_TEST_LINK.get_button(parameters=[test.id])],
