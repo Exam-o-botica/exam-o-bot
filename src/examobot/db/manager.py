@@ -35,6 +35,13 @@ class DBManager:
 
     # USERS
 
+    async def get_user_by_id(self, user_id: int) -> User:
+        query = select(User).where(User.id == user_id)  # that's fine
+        async with self.session_maker() as session:
+            result = await session.execute(query)
+            user = result.scalars().first()
+        return user
+
     async def add_user(self, user_id: int, username: str, name: str) -> User:
         new_user = User(id=user_id, username=username, name=name)
         async with self.session_maker() as session:
@@ -43,7 +50,7 @@ class DBManager:
         return new_user
 
     async def check_if_user_exists(self, user_id: int) -> bool:
-        query = select(User).where(User.id == user_id)  # that's correct
+        query = select(User).where(User.id == user_id)  # that's fine
         async with self.session_maker() as session:
             user = await session.execute(query)
             user = user.first()
@@ -89,6 +96,35 @@ class DBManager:
             await session.commit()
 
         return new_test
+
+    async def add_classroom(self, author_id: int, title: str):
+        new_classroom = Classroom(
+            uuid=str(uuid.uuid4()),
+            title=title,
+            author_id=author_id,
+        )
+
+        async with self.session_maker() as session:
+            session.add(new_classroom)
+            await session.commit()
+
+        return new_classroom
+
+    async def delete_classroom(self, classroom_id: int):
+        classroom = await self.get_classroom_by_id(classroom_id)
+        query2 = select(UserClassroomParticipation).where(UserClassroomParticipation.classroom_id == classroom_id)
+        async with self.session_maker() as session:
+            # res1 = await session.execute(query1)
+            res2 = await session.execute(query2)
+            items = res2.scalars().all()
+            for i in items:
+                await session.delete(i)
+            # classrooms, user_classrooms = res1.scalars().all(), res2.scalars().all()
+            # for i in cl
+            # map(session.delete, classrooms)
+            # map(session.delete, user_classrooms)
+            await session.delete(classroom)
+            await session.commit()
 
     async def get_classroom_by_uuid(self, classroom_uuid: str) -> Classroom:
         query = select(Classroom).where(Classroom.uuid == classroom_uuid)
@@ -139,19 +175,6 @@ class DBManager:
             session.add(new_user_classroom)
             await session.commit()
 
-    async def add_classroom(self, author_id: int, title: str):
-        new_classroom = Classroom(
-            uuid=str(uuid.uuid4()),
-            title=title,
-            author_id=author_id,
-        )
-
-        async with self.session_maker() as session:
-            session.add(new_classroom)
-            await session.commit()
-
-        return new_classroom
-
     async def get_users_in_classroom(self, classroom_id: int):
         query = select(User).join(UserClassroomParticipation).where(
             UserClassroomParticipation.classroom_id == classroom_id)
@@ -159,20 +182,26 @@ class DBManager:
             users = await session.execute(query)
         return users.scalars().all()
 
+    async def update_test_by_id(self, test_id: int, **kwargs):
+        query = update(Test).values(**kwargs).where(Test.id == test_id)
+        async with self.session_maker() as session:
+            await session.execute(query)
+            await session.commit()
+
     # CURRENT TESTS
 
     async def get_current_ended_or_with_no_attempts_tests_by_user_id(self, user_id: int):
-        query = select(Test).where(and_(UserTestParticipation.user_id == user_id,
-                                        or_(Test.status_set_by_author == TestStatus.UNAVAILABLE,
-                                            UserTestParticipation.status == UserTestParticipationStatus.PASSED_NO_ATTEMPTS)))
+        query = select(Test).join(UserTestParticipation).where(and_(UserTestParticipation.user_id == user_id,
+                                                                    or_(Test.status_set_by_author == TestStatus.UNAVAILABLE,
+                                                                        UserTestParticipation.status == UserTestParticipationStatus.PASSED_NO_ATTEMPTS)))
         async with self.session_maker() as session:
             tests = await session.execute(query)
         return tests.scalars().all()
 
     async def get_current_available_test_with_attempts_by_user_id(self, user_id: int):
-        query = select(Test).where(and_(UserTestParticipation.user_id == user_id,
-                                        Test.status_set_by_author == TestStatus.AVAILABLE,
-                                        UserTestParticipation.status != UserTestParticipationStatus.PASSED_NO_ATTEMPTS))
+        query = select(Test).join(UserTestParticipation).where(and_(UserTestParticipation.user_id == user_id,
+                                                                    Test.status_set_by_author == TestStatus.AVAILABLE,
+                                                                    UserTestParticipation.status != UserTestParticipationStatus.PASSED_NO_ATTEMPTS))
         async with self.session_maker() as session:
             tests = await session.execute(query)
         return tests.scalars().all()
@@ -183,6 +212,14 @@ class DBManager:
             tasks = await session.execute(query)
 
         return tasks.scalars().all()
+      
+    async def get_current_classrooms_by_user_id(self, user_id: int):
+        query = (
+            select(Classroom).join(UserClassroomParticipation).where(
+                UserClassroomParticipation.user_id == user_id))  # that's fine
+        async with self.session_maker() as session:
+            classrooms = await session.execute(query)
+        return classrooms.scalars().all()
 
     async def update_test_by_id(self, test_id: int, **kwargs):
         query = update(Test).values(**kwargs).where(Test.id == test_id)
