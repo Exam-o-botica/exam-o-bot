@@ -1,62 +1,66 @@
 import json
-import os.path
-import pickle
+import re
 import socket
 from pprint import pprint
 from typing import Optional
 
-from google.auth.transport.requests import Request
-from google_auth_oauthlib.flow import InstalledAppFlow
+from apiclient import discovery
 from googleapiclient import errors
-from googleapiclient.discovery import build
+from httplib2 import Http
+from oauth2client import client, file, tools
 
-from src.examobot.definitions import GOOGLE_SCRIPT_ID, GOOGLE_CONFIG_FILE, FORM_HANDLERS_DIR
+from src.examobot.definitions import GOOGLE_SCRIPT_ID, GOOGLE_CLIENT_SECRETS
 
 socket.setdefaulttimeout(120)
+
+SCOPES = "https://www.googleapis.com/auth/forms.body.readonly"
+DISCOVERY_DOC = "https://forms.googleapis.com/$discovery/rest?version=v1"
+store = file.Storage("token.json")
 
 
 class FormExtractor:
     @staticmethod
-    def _login(config):
+    def _login(client_secrets):
         try:
             creds = None
-            token_file = os.path.join(
-                FORM_HANDLERS_DIR, config['credentials_path'], config['token_file'])
-            credentials_file = os.path.join(
-                FORM_HANDLERS_DIR, config['credentials_path'], config['credentials_file'])
+            if not creds or creds.invalid:
+                flow = client.flow_from_clientsecrets(str(GOOGLE_CLIENT_SECRETS), SCOPES)
+                creds = tools.run_flow(flow, store)
 
-            if os.path.exists(token_file):
-                with open(token_file, 'rb') as token:
-                    creds = pickle.load(token)
-            if not creds or not creds.valid:
-                if creds and creds.expired and creds.refresh_token:
-                    creds.refresh(Request())
-                else:
-                    flow = InstalledAppFlow.from_client_secrets_file(str(credentials_file), config['SCOPES'])
-                    creds = flow.run_local_server(port=0)
-
-                with open(token_file, 'wb') as token:
-                    pickle.dump(creds, token)
-
-            service = build('script', 'v1', credentials=creds)
-            pprint('Login successful')
+            service = discovery.build(
+                "forms",
+                "v1",
+                http=creds.authorize(Http()),
+                discoveryServiceUrl=DISCOVERY_DOC,
+                static_discovery=False,
+            )
             return service
-
         except Exception as e:
             pprint(f'Login failure: {e}')
             return None
 
     @staticmethod
+    def _get_form_id_from_url(url: str) -> str | None:
+        # Define a regular expression pattern to match the form ID
+        pattern = r'/forms/d/([a-zA-Z0-9-_]+)'
+
+        # Use re.search to find the pattern in the URL
+        match = re.search(pattern, url)
+
+        # Check if a match is found and return the form ID
+        if match:
+            form_id = match.group(1)
+            return form_id
+        else:
+            # Return None if no match is found
+            return None
+
+    @staticmethod
     def _get_json(service, script_id, form_url):
         try:
-            body = {
-                "function": "main",
-                "devMode": True,
-                "parameters": form_url
-            }
-            resp = service.scripts().run(scriptId=script_id, body=body).execute()
-            result_json = json.dumps(resp['response']['result'], ensure_ascii=False, indent=4)
-            return result_json
+            form_id = FormExtractor._get_form_id_from_url(form_url)
+            res_json = service.forms().get(formId=form_id).execute()
+            return res_json
         except Exception as e:
             pprint(f'Script failure: {e}')
             return None
@@ -65,11 +69,8 @@ class FormExtractor:
     @staticmethod
     async def extract(form_url: str) -> Optional[str]:
         try:
-            with open(GOOGLE_CONFIG_FILE, "r") as f:
-                config = json.load(f)
-
-            service = FormExtractor._login(config)
-            meta_data = FormExtractor._get_json(service, GOOGLE_SCRIPT_ID, form_url)
-            return meta_data
+            service = FormExtractor._login(None)
+            res = FormExtractor._get_json(service, GOOGLE_SCRIPT_ID, form_url)
+            return json.dumps(res, ensure_ascii=False, indent=4)
         except (errors.HttpError,):
             return None
