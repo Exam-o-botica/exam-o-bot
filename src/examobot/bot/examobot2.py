@@ -55,7 +55,7 @@ class ValidationPatterns:
     TIME = re.compile(r"\d+")
     DEADLINE = re.compile(r"\d\d\.\d\d\.\d\d\d\d\s\d\d:\d\d")
     ATTEMPTS_NUMBER = re.compile(r"\d+")
-    LINK = re.compile(r"(http(s)?://)?docs\.google\.com/forms/d/[a-zA-Z\d-]+/edit")
+    LINK = re.compile(r"(http(s)?://)?docs\.google\.com/forms/d/[_a-zA-Z\d-]+/edit")
 
 
 '''
@@ -764,6 +764,7 @@ async def create_test_save(message: Message, state: FSMContext):
         link=data["test_link"],
         meta_data=data["test_meta_data"],
     )
+    print(data["test_meta_data"])
     await message.answer(data["test_meta_data"])  # DELETE THIS
 
     tests = await db_manager.get_tests_by_author_id(message.from_user.id)
