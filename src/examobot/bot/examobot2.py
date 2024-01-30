@@ -15,14 +15,10 @@ from aiogram.types import Message
 
 from consts import *
 from keyboards import *
-from Entity import Entity
 from src.examobot.db.manager import DBManager
 from src.examobot.form_handlers import *
 
-# from src.main import bot, dp
-
 TOKEN = os.getenv("EXAM_O_BOT_TOKEN")
-# from src.main import db_manager
 dp = Dispatcher()
 db_manager = DBManager()
 
@@ -42,18 +38,6 @@ class Form(StatesGroup):
     create_test_save = State()
 
 
-class Entity(Enum):
-    TEST = "test"
-    CLASSROOM = "classroom"
-
-
-class ValidationPatterns:
-    TITLE = re.compile(r"(\w|\d)+(\s+(\w|\d)+)*")
-    TIME = re.compile(r"\d+")
-    DEADLINE = re.compile(r"\d\d\.\d\d\.\d\d\d\d\s\d\d:\d\d")
-    ATTEMPTS_NUMBER = re.compile(r"\d+")
-    LINK = re.compile(r"(http(s)?://)?docs\.google\.com/forms/d/[a-zA-Z\d-]+/edit")
-
 '''
 possible start links: 
     1. https://t.me/beermovent_bot?start=test={test_id}
@@ -64,10 +48,65 @@ possible start links:
 '''
 
 
-def valid_link(link, type):
-    regex = re.compile(f'{type}=' + '[a-f0-9]{8}-?[a-f0-9]{4}-?4[a-f0-9]{3}-?[89ab][a-f0-9]{3}-?[a-f0-9]{12}\Z', re.I)
-    match = regex.match(link)
-    return bool(match)
+class ValidationPatterns:
+    TITLE = re.compile(r"(\w|\d)+(\s+(\w|\d)+)*")
+    TIME = re.compile(r"\d+")
+    DEADLINE = re.compile(r"\d\d\.\d\d\.\d\d\d\d\s\d\d:\d\d")
+    ATTEMPTS_NUMBER = re.compile(r"\d+")
+    LINK = re.compile(r"(http(s)?://)?docs\.google\.com/forms/d/[a-zA-Z\d-]+/edit")
+
+    @staticmethod
+    def SHARE_LINK(link_type: str):
+        return re.compile(
+            f'{link_type}=[a-f0-9]{8}-?[a-f0-9]{4}-?4[a-f0-9]{3}-?[89ab][a-f0-9]{3}-?[a-f0-9]{12}\Z', re.I)
+
+
+class Validations:
+    @staticmethod
+    def is_valid_share_link(link: str, link_type: str) -> bool:
+        match = re.fullmatch(ValidationPatterns.SHARE_LINK(link_type), link.strip())
+        return match is not None
+
+    @staticmethod
+    async def validate_test_title(message: Message, text: str) -> str | None:
+        if not re.fullmatch(ValidationPatterns.TITLE, text.strip()):
+            await message.answer(text="title may contain letters, digits and spaces. please, rewrite")
+            return None
+
+        return text.strip()
+
+    @staticmethod
+    async def validate_test_time(message: Message, text: str) -> str | None:
+        if not re.fullmatch(ValidationPatterns.TIME, text.strip()):
+            await message.answer(text="duration may contain only digits. please, rewrite")
+            return None
+
+        return text.strip()
+
+    @staticmethod
+    async def validate_test_deadline(message: Message, text: str) -> int | None:
+        if not re.fullmatch(ValidationPatterns.DEADLINE, text.strip()):
+            await message.answer(text="please, follow the format: 'DD.MM.YYYY hh:mm'")
+            return
+
+        try:
+            timestamp = int(
+                time.mktime(
+                    datetime.strptime(text.strip(), "%d.%m.%Y %H:%M").timetuple()))
+        except Exception as e:
+            pprint(f"Deadline error: {e}")
+            await message.answer(text="seems like there is some error with the date. please, retry")
+            return None
+
+        return timestamp
+
+    @staticmethod
+    async def validate_test_attempts_number(message: Message, text: str) -> str | None:
+        if not re.fullmatch(ValidationPatterns.ATTEMPTS_NUMBER, text.strip()):
+            await message.answer(text="number of attempts may contain only digits. please, rewrite")
+            return None
+
+        return text.strip()
 
 
 @dp.message(CommandStart())
@@ -81,7 +120,7 @@ async def welcome_message(message: types.Message, command: CommandObject) -> Non
         await message.bot.send_message(message.from_user.id, START_TEXT)
 
     if args:
-        if valid_link(args, "class"):
+        if Validations.is_valid_share_link(args, "class"):
             classroom_uuid = args.split("=")[1]
             classroom = await db_manager.get_classroom_by_uuid(classroom_uuid)
 
@@ -106,7 +145,7 @@ async def welcome_message(message: types.Message, command: CommandObject) -> Non
             await send_message_to_user(message.bot, classroom.author_id,
                                        f"user @{message.from_user.username} joined your classroom \"{classroom.title}\"")
 
-        elif valid_link(args, "test"):
+        elif Validations.is_valid_share_link(args, "test"):
             test_uuid = args.split("=")[1]
             test = await db_manager.get_test_by_uuid(test_uuid)
             if not test:
@@ -479,54 +518,45 @@ async def handle_edit_test_link_query(call: types.CallbackQuery, state: FSMConte
 
 @dp.message(Form.edit_test_title)
 async def type_edit_test(message: Message, state: FSMContext):
-    if not re.fullmatch(ValidationPatterns.TITLE, message.text.strip()):
-        await message.answer(text="title may contain letters, digits and spaces. please, rewrite")
+    test_title = await Validations.validate_test_title(message=message, text=message.text)
+    if not test_title:
         return
 
     data = await state.get_data()
-    await db_manager.update_test_by_id(data["edit_test_id"], title=message.text.strip())
+    await db_manager.update_test_by_id(data["edit_test_id"], title=test_title)
     await edit_test_finish(message, state, data["edit_test_id"])
 
 
 @dp.message(Form.edit_test_time)
 async def type_edit_test(message: Message, state: FSMContext):
-    if not re.fullmatch(ValidationPatterns.TIME, message.text.strip()):
-        await message.answer(text="duration may contain only digits. please, rewrite")
+    test_time = await Validations.validate_test_time(message=message, text=message.text)
+    if not test_time:
         return
 
     data = await state.get_data()
-    await db_manager.update_test_by_id(data["edit_test_id"], time=message.text.strip())
+    await db_manager.update_test_by_id(data["edit_test_id"], time=test_time)
     await edit_test_finish(message, state, data["edit_test_id"])
 
 
 @dp.message(Form.edit_test_deadline)
 async def type_edit_test(message: Message, state: FSMContext):
-    if not re.fullmatch(ValidationPatterns.DEADLINE, message.text.strip()):
-        await message.answer(text="please, follow the format: 'DD.MM.YYYY hh:mm'")
-        return
-
-    try:
-        timestamp = int(
-            time.mktime(
-                datetime.strptime(message.text.strip(), "%d.%m.%Y %H:%M").timetuple()))
-    except Exception as e:
-        pprint(f"Deadline error: {e}")
-        await message.answer(text="seems like there is some error with the date. please, retry")
+    timestamp = await Validations.validate_test_deadline(message=message, text=message.text)
+    if not timestamp:
         return
 
     data = await state.get_data()
-    await db_manager.update_test_by_id(data["edit_test_id"], time=timestamp)
+    await db_manager.update_test_by_id(data["edit_test_id"], deadline=timestamp)
     await edit_test_finish(message, state, data["edit_test_id"])
 
 
 @dp.message(Form.edit_test_attempts_number)
 async def type_edit_test(message: Message, state: FSMContext):
-    if not re.fullmatch(ValidationPatterns.ATTEMPTS_NUMBER, message.text.strip()):
-        await message.answer(text="number of attempts may contain only digits. please, rewrite")
+    test_attempts_number = await Validations.validate_test_attempts_number(message=message, text=message.text)
+    if not test_attempts_number:
         return
 
     data = await state.get_data()
-    await db_manager.update_test_by_id(data["edit_test_id"], time=message.text.strip())
+    await db_manager.update_test_by_id(data["edit_test_id"], attempts_number=test_attempts_number)
     await edit_test_finish(message, state, data["edit_test_id"])
 
 
@@ -560,7 +590,7 @@ async def type_edit_test(message: Message, state: FSMContext):
         )
         return
 
-    await db_manager.update_test_by_id(data["edit_test_id"], time=message.text.strip())
+    await db_manager.update_test_by_id(data["edit_test_id"], link=message.text.strip())
     await edit_test_finish(message, state, data["edit_test_id"])
 
 
@@ -584,39 +614,30 @@ async def handle_create_test_query(call: types.CallbackQuery, state: FSMContext)
 
 @dp.message(Form.create_test_title)
 async def type_create_test(message: Message, state: FSMContext):
-    if not re.fullmatch(ValidationPatterns.TITLE, message.text.strip()):
-        await message.answer(text="title may contain letters, digits and spaces. please, rewrite")
+    test_title = await Validations.validate_test_title(message=message, text=message.text)
+    if not test_title:
         return
 
-    await state.update_data(test_title=message.text.strip())
+    await state.update_data(test_title=test_title)
     await state.set_state(Form.create_test_time)
     await message.answer(text="type test duration in minutes")
 
 
 @dp.message(Form.create_test_time)
 async def type_create_test(message: Message, state: FSMContext):
-    if not re.fullmatch(ValidationPatterns.TIME, message.text.strip()):
-        await message.answer(text="duration may contain only digits. please, rewrite")
+    test_time = await Validations.validate_test_time(message=message, text=message.text)
+    if not test_time:
         return
 
-    await state.update_data(test_time=int(message.text.strip()))
+    await state.update_data(test_time=int(test_time))
     await state.set_state(Form.create_test_deadline)
     await message.answer(text="type test deadline in format 'DD.MM.YYYY hh:mm'")
 
 
 @dp.message(Form.create_test_deadline)
 async def type_create_test(message: Message, state: FSMContext):
-    if not re.fullmatch(ValidationPatterns.DEADLINE, message.text.strip()):
-        await message.answer(text="please, follow the format: 'DD.MM.YYYY hh:mm'")
-        return
-
-    try:
-        timestamp = int(
-            time.mktime(
-                datetime.strptime(message.text.strip(), "%d.%m.%Y %H:%M").timetuple()))
-    except Exception as e:
-        pprint(f"Deadline error: {e}")
-        await message.answer(text="seems like there is some error with the date. please, retry")
+    timestamp = await Validations.validate_test_deadline(message=message, text=message.text)
+    if not timestamp:
         return
 
     await state.update_data(test_deadline_ts=timestamp)
@@ -626,11 +647,11 @@ async def type_create_test(message: Message, state: FSMContext):
 
 @dp.message(Form.create_test_attempts_number)
 async def type_create_test(message: Message, state: FSMContext):
-    if not re.fullmatch(ValidationPatterns.ATTEMPTS_NUMBER, message.text.strip()):
-        await message.answer(text="number of attempts may contain only digits. please, rewrite")
+    test_attempts_number = await Validations.validate_test_attempts_number(message=message, text=message.text)
+    if not test_attempts_number:
         return
 
-    await state.update_data(test_attempts_number=int(message.text.strip()))
+    await state.update_data(test_attempts_number=int(test_attempts_number))
     await state.set_state(Form.create_test_link)
     await message.answer(text="type test link to Google form in format...")
 
