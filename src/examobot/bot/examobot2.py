@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 import os
 import re
@@ -11,7 +12,8 @@ from aiogram import Dispatcher, Bot
 from aiogram.filters import CommandStart, CommandObject
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
-from aiogram.types import Message
+from aiogram.types import Message, InputFile
+from io import BytesIO
 
 from consts import *
 from keyboards import *
@@ -233,6 +235,9 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
     elif OPEN_TEST.has_that_callback(call.data):
         await handle_change_test_status_query(call, TestStatus.AVAILABLE)
 
+    elif REFRESH_TEST_DATA.has_that_callback(call.data):
+        await handle_refresh_test_data_query(call)
+
     # CURRENT TESTS
 
     elif CURRENT_TESTS.has_that_callback(call.data):
@@ -255,6 +260,30 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
 
     elif SPEC_CURRENT_CLASSROOM.has_that_callback(call.data):
         await handle_spec_current_classroom_query(call)
+
+
+async def write_json_to_file(data: str):  # todo delete it
+    with open('data.json', 'w') as f:
+        print('here2')
+        f.write(data)
+
+
+async def handle_refresh_test_data_query(call: types.CallbackQuery):
+    test_id = get_test_id_or_classroom_id_from_callback(call.data)
+    test = await db_manager.get_test_by_id(test_id)
+    meta_data = await FormExtractor.extract(form_url=test.link)
+    if not meta_data:
+        await call.bot.edit_message_text(
+            "unfortunately, I can't parse your Google form for some reason.",
+            call.from_user.id, call.message.message_id,
+            reply_markup=get_button_to_prev_menu(SPEC_CREATED_TEST, [test_id]))
+        return
+    await db_manager.update_test_by_id(test_id, meta_data=meta_data)
+    # await write_json_to_file(meta_data)  # todo delete id
+
+    await call.bot.edit_message_text(
+        "test data was successfully updated", call.from_user.id, call.message.message_id,
+        reply_markup=get_button_to_prev_menu(SPEC_CREATED_TEST, [test_id]))
 
 
 async def handle_edit_classroom_title_query(call: types.CallbackQuery, state: FSMContext) -> None:
@@ -755,15 +784,19 @@ async def type_create_test(message: Message, state: FSMContext):
 
 async def create_test_save(message: Message, state: FSMContext):
     data = await state.get_data()
-    await db_manager.add_test(
+    new_test = await db_manager.add_test(
         title=data["test_title"],
         author_id=message.from_user.id,
         time=data["test_time"],
         deadline=data["test_deadline_ts"],
         attempts_number=data["test_attempts_number"],
         link=data["test_link"],
+        # respondent_uri=json.loads(data["test_meta_data"])["responder_uri"],
+        # todo make function to get it and some other useful data
         meta_data=data["test_meta_data"],
     )
+    new_test_id = new_test.id
+    # todo invoke json extractor here
     print(data["test_meta_data"])
     await message.answer(data["test_meta_data"])  # DELETE THIS
 
