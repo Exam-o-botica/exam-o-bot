@@ -6,15 +6,11 @@ from typing import Optional, Any
 from apiclient import discovery
 from googleapiclient import errors
 from httplib2 import Http
-from oauth2client import client, file, tools
+from oauth2client import client, tools
 
-from src.examobot.definitions import GOOGLE_CLIENT_SECRETS
+from src.examobot.definitions import GOOGLE_CLIENT_SECRETS, TOKEN_STORE, SCOPES, DISCOVERY_DOC
 
 socket.setdefaulttimeout(120)
-
-SCOPES = "https://www.googleapis.com/auth/forms.body.readonly"
-DISCOVERY_DOC = "https://forms.googleapis.com/$discovery/rest?version=v1"
-store = file.Storage("token.json")
 
 
 # TODO: 2. Parse every question to message
@@ -25,10 +21,10 @@ class FormExtractor:
     @staticmethod
     def _login() -> Any:
         try:
-            creds = store.get()
+            creds = TOKEN_STORE.get()
             if not creds or creds.invalid:
                 flow = client.flow_from_clientsecrets(str(GOOGLE_CLIENT_SECRETS), SCOPES)
-                creds = tools.run_flow(flow, store)
+                creds = tools.run_flow(flow, TOKEN_STORE)
 
             service = discovery.build(
                 "forms",
