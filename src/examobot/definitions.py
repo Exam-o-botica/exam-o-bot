@@ -18,7 +18,8 @@ DEFAULT_USER_AGENT = "Mozilla/5.0 (Windows NT 6.1; rv:84.0) Gecko/20100101 Firef
 
 # For Google Script API
 FORM_HANDLERS_DIR = os.path.join(ROOT_DIR, "form_handlers")
-GOOGLE_CONFIG_FILE = os.path.join(FORM_HANDLERS_DIR, "google_config.json")
+GOOGLE_CREDENTIALS = os.path.join(FORM_HANDLERS_DIR, "credentials")
+GOOGLE_CLIENT_SECRETS = os.path.join(GOOGLE_CREDENTIALS, "client_secrets.json")
 GOOGLE_SCRIPT_ID = os.getenv("GOOGLE_SCRIPT_ID")
 
 

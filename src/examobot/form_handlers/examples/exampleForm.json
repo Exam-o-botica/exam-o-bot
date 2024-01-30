@@ -1,0 +1,174 @@
+{
+  "formId": "1ZIg8seLkWes8k3MSWAPC3ZTmtDOp3V6L6-YprrtaBd4",
+  "info": {
+    "title": "Quickstart form",
+    "documentTitle": "Новая форма"
+  },
+  "settings": {
+    "quizSettings": {
+      "isQuiz": true
+    }
+  },
+  "revisionId": "00000028",
+  "responderUri": "https://docs.google.com/forms/d/e/1FAIpQLSd409Gv5I5X6Lm41NCdtO38iEX0Q4Hd8NLfjjJBQbkvYexqAw/viewform",
+  "items": [
+    {
+      "itemId": "146c90df",
+      "title": "In what year did the United States land a mission on the moon?",
+      "questionItem": {
+        "question": {
+          "questionId": "6f5f9bee",
+          "required": true,
+          "grading": {
+            "pointValue": 69,
+            "correctAnswers": {
+              "answers": [
+                {
+                  "value": "1967"
+                },
+                {
+                  "value": "1969"
+                }
+              ]
+            }
+          },
+          "choiceQuestion": {
+            "type": "RADIO",
+            "options": [
+              {
+                "value": "1965"
+              },
+              {
+                "value": "1967"
+              },
+              {
+                "value": "1969"
+              },
+              {
+                "value": "1971"
+              }
+            ],
+            "shuffle": true
+          }
+        }
+      }
+    },
+    {
+      "itemId": "0d6b1f86",
+      "textItem": {},
+      "title": "Боба?"
+    },
+    {
+      "itemId": "6e0c5b2b",
+      "title": "Боба?",
+      "questionItem": {
+        "question": {
+          "questionId": "3f20ee43",
+          "required": true,
+          "choiceQuestion": {
+            "type": "RADIO",
+            "options": [
+              {
+                "value": "Абоба"
+              },
+              {
+                "value": "Биба"
+              },
+              {
+                "value": "Бебра"
+              },
+              {
+                "value": "Бубс"
+              },
+              {
+                "value": "Вариант 5"
+              },
+              {
+                "isOther": true
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "itemId": "3d9b7b32",
+      "title": "Боба?",
+      "questionItem": {
+        "question": {
+          "questionId": "2c9d335d",
+          "required": true,
+          "grading": {
+            "pointValue": 1337,
+            "correctAnswers": {
+              "answers": [
+                {
+                  "value": "Абоба"
+                },
+                {
+                  "value": "Бубс"
+                }
+              ]
+            }
+          },
+          "choiceQuestion": {
+            "type": "RADIO",
+            "options": [
+              {
+                "value": "Абоба"
+              },
+              {
+                "value": "Биба"
+              },
+              {
+                "value": "Бебра"
+              },
+              {
+                "value": "Бубс"
+              },
+              {
+                "value": "Вариант 5"
+              },
+              {
+                "isOther": true
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "itemId": "364cb20c",
+      "questionItem": {
+        "question": {
+          "questionId": "33166a06",
+          "choiceQuestion": {
+            "type": "RADIO",
+            "options": [
+              {
+                "value": "Вариант 1"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "itemId": "7c6eaffa",
+      "questionItem": {
+        "question": {
+          "questionId": "19356e9b",
+          "choiceQuestion": {
+            "type": "RADIO",
+            "options": [
+              {
+                "value": "Вариант 1"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "linkedSheetId": "1dbLVZVFI58agfHJ1urmM8WPfsO7UeI4XQKMCTfDT6V0"
+}
