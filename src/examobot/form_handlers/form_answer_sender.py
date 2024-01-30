@@ -7,6 +7,10 @@ from googleapiclient import errors
 from lxml import html
 
 
+# TODO: Change logic of class. It should mostly return nothing and throw custom exceptions so that later on
+#  it could be caught and handled properly depending on the exception
+
+
 class FormAnswerSender:
     @staticmethod
     def _create_send_url(data: dict[str, Any], answers: dict[int, str]) -> str:
@@ -44,17 +48,17 @@ class FormAnswerSender:
             resp.raise_for_status()
             return FormAnswerSender._determine_if_test_is_complete(resp.text)
         except (errors.HttpError,):
-            return False
+            pass
 
     @staticmethod
-    async def send_answer_(data: dict[str, Any], answers: dict[int, str]) -> bool:
+    async def send_answer_(data: dict[str, Any], answers: dict[int, str]):
         try:
             url = FormAnswerSender._create_send_url(data, answers)
             resp = requests.get(url)
             resp.raise_for_status()
-            return FormAnswerSender._determine_if_test_is_complete(resp.text)
+            FormAnswerSender._determine_if_test_is_complete(resp.text)
         except Exception as e:
-            return False
+            raise
 
 
 def main():
