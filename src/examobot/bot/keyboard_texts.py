@@ -101,6 +101,8 @@ CURRENT_TESTS = Button(name='CURRENT_TESTS', text='current tests')
 
 SPEC_CURRENT_TEST = Button(name='SPEC_CURRENT_TEST', text='specific current test')
 
+START_CURRENT_TEST = Button(name='START_CURRENT_TEST', text='start test')
+
 CURRENT_ENDED_OR_WITH_NO_ATTEMPTS_TESTS = Button(
     name='CURRENT_ENDED_OR_WITH_NO_ATTEMPTS_TESTS', text='ended tests')
 

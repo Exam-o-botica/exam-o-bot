@@ -54,6 +54,7 @@ class ValidationPatterns:
     ATTEMPTS_NUMBER = re.compile(r"\d+")
     LINK = re.compile(r"(http(s)?://)?docs\.google\.com/forms/d/[a-zA-Z\d-]+/edit")
 
+
 '''
 possible start links: 
     1. https://t.me/beermovent_bot?start=test={test_id}
@@ -233,6 +234,9 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
     elif CURRENT_ENDED_OR_WITH_NO_ATTEMPTS_TESTS.has_that_callback(call.data):
         await handle_current_ended_or_with_no_attempts_tests_query(call)
 
+    elif SPEC_CURRENT_TEST.has_that_callback(call.data):
+        await handle_spec_current_test_query(call)
+
     # CURRENT CLASSROOMS
 
     elif CURRENT_CLASSROOMS.has_that_callback(call.data):
@@ -242,26 +246,50 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
         await handle_spec_current_classroom_query(call)
 
 
-async def handle_change_test_status_query(call: types.CallbackQuery, new_status: TestStatus) -> None:
+async def check_test_or_classroom_was_deleted_and_inform_user(entity: Test | Classroom, text,
+                                                              call: types.CallbackQuery):
+    if entity:
+        return False
+    await call.bot.edit_message_text(text, call.from_user.id, call.message.message_id,
+                                     reply_markup=get_go_to_main_menu_keyboard())
+    return True
+
+
+async def handle_spec_current_test_query(call: types.CallbackQuery):
     test_id = get_test_id_or_classroom_id_from_callback(call.data)
     test = await db_manager.get_test_by_id(test_id)
+
+    if await check_test_or_classroom_was_deleted_and_inform_user(test, "this test was deleted", call):
+        return
+
+    await call.bot.edit_message_text(get_spec_test_info_message(test),
+                                     call.from_user.id, call.message.message_id,
+                                     reply_markup=get_spec_current_test_keyboard(test),
+                                     parse_mode="HTML")
+
+
+async def handle_change_test_status_query(call: types.CallbackQuery, new_status: TestStatus) -> None:
+    test_id = get_test_id_or_classroom_id_from_callback(call.data)
     updated_values = {'status_set_by_author': new_status}
     await db_manager.update_test_by_id(test_id, **updated_values)
+    test = await db_manager.get_test_by_id(test_id)
 
     # todo don't need to invoke get_spec_test_info_message, hjust change msg to make it quicker
+
+    key_word = "opened" if new_status == TestStatus.AVAILABLE else "closed"
 
     await call.bot.edit_message_text(get_spec_test_info_message(test),
                                      call.from_user.id, call.message.message_id,
                                      reply_markup=get_spec_created_test_keyboard(test),
                                      parse_mode="HTML")
 
+    await call.bot.answer_callback_query(call.id, f"test {key_word}")
+
 
 async def handle_spec_current_classroom_query(call: types.CallbackQuery):
     classroom_id = get_test_id_or_classroom_id_from_callback(call.data)
     classroom = await db_manager.get_classroom_by_id(classroom_id)
-    if not classroom:
-        await call.bot.edit_message_text("this classroom was deleted", call.from_user.id, call.message.message_id,
-                                         reply_markup=get_go_to_main_menu_keyboard())
+    if await check_test_or_classroom_was_deleted_and_inform_user(classroom, "this classroom was deleted", call):
         return
     author = await db_manager.get_user_by_id(classroom.author_id)
 
@@ -396,12 +424,11 @@ async def handle_current_available_test_with_attempts_query(call: types.Callback
 
 
 def get_spec_test_info_message(test: Test) -> str:
-    msg = f"""<b>Test title:</b> {test.title}
-    <b>Test duration:</b> {test.time} min
-    <b>Test deadline:</b> {test.deadline}
-    <b>Test attempts number:</b> {test.attempts_number}
-    <b>Test status:</b> {test.status_set_by_author} {get_emoji_test_status(test.status_set_by_author)}
-    <b>Test link:</b> {test.link}"""
+    msg = f"<b>Test title:</b> {test.title}\n" \
+          f"<b>Test duration:</b> {test.time} min\n" \
+          f"<b>Test deadline:</b> {test.deadline}\n" \
+          f"<b>Test attempts number:</b> {test.attempts_number}\n" \
+          f"<b>Test status:</b> {test.status_set_by_author} {get_emoji_test_status(test.status_set_by_author)}"
     return msg
 
 
@@ -466,6 +493,7 @@ async def handle_edit_test_deadline_query(call: types.CallbackQuery, state: FSMC
 
 
 async def handle_edit_test_attempts_number_query(call: types.CallbackQuery, state: FSMContext):
+    # todo check that number of attempts is not less than max number of attempts made by users already
     await handle_edit_test_something_query(
         call, state, Form.edit_test_attempts_number, "type new test attempts number"
     )

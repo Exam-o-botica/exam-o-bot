@@ -8,7 +8,9 @@ BACK_TO_MAIN_MENU_BUTTON = BACK_TO_MAIN_MENU.get_button()
 GO_TO_MAIN_MENU_BUTTON = BACK_TO_MAIN_MENU.get_button(new_text=GO_TO_MAIN_MENU_TEXT)
 
 
-def get_button_to_prev_menu(button: Button, parameters: list[Any], new_text: str = GO_TO_PREVIOUS_MENU_TEXT):
+def get_button_to_prev_menu(button: Button, parameters: list[Any] | None = None, new_text: str = GO_TO_PREVIOUS_MENU_TEXT):
+    if parameters is None:
+        parameters = []
     return button.get_button(parameters=parameters, new_text=new_text)
 
 
@@ -162,6 +164,14 @@ def get_test_edit_cancel_keyboard(test_id: int):
     inline_keyboard = [
         [EDIT_TEST.get_button(
             new_text=GO_TO_PREVIOUS_MENU_TEXT, parameters=[test_id])],
+    ]
+    return types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
+
+
+def get_spec_current_test_keyboard(test: Test):
+    inline_keyboard = [
+        [START_CURRENT_TEST.get_button(parameters=[test.id])],
+        [get_button_to_prev_menu(button=CURRENT_AVAILABLE_TEST_WITH_ATTEMPTS)],
     ]
     return types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
 
