@@ -8,7 +8,8 @@ BACK_TO_MAIN_MENU_BUTTON = BACK_TO_MAIN_MENU.get_button()
 GO_TO_MAIN_MENU_BUTTON = BACK_TO_MAIN_MENU.get_button(new_text=GO_TO_MAIN_MENU_TEXT)
 
 
-def get_button_to_prev_menu(button: Button, parameters: list[Any] | None = None, new_text: str = GO_TO_PREVIOUS_MENU_TEXT):
+def get_button_to_prev_menu(button: Button, parameters: list[Any] | None = None,
+                            new_text: str = GO_TO_PREVIOUS_MENU_TEXT):
     if parameters is None:
         parameters = []
     return button.get_button(parameters=parameters, new_text=new_text)
@@ -27,7 +28,7 @@ def get_authors_buttons_():
 def get_delete_entity_confirm_keyboard(entity: Entity, entity_id: int):
     inline_keyboard = [
         [DELETE_ENTITY_CONFIRM.get_button(parameters=[entity.name, entity_id])],
-        [get_button_to_prev_menu(button=SPEC_CREATED_CLASSROOM, parameters=[entity_id], new_text='cancel')],
+        [get_button_to_prev_menu(button=EDIT_CLASSROOM, parameters=[entity_id], new_text='cancel')],
     ]
     return types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
 
@@ -59,8 +60,17 @@ def get_classrooms_keyboard(classrooms: list[Classroom], classroom_type: str = '
 def get_spec_classroom_keyboard(classroom: Classroom):
     inline_keyboard = [
         [SHOW_CLASSROOM_PARTICIPANTS.get_button(parameters=[classroom.id])],
-        [DELETE_CLASSROOM.get_button(parameters=[classroom.id])],
+        [EDIT_CLASSROOM.get_button(parameters=[classroom.id])],
         [AUTHORS_CLASSROOMS.get_button(new_text=GO_TO_PREVIOUS_MENU_TEXT)],
+    ]
+    return types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
+
+
+def get_edit_classroom_keyboard(classroom: Classroom) -> types.InlineKeyboardMarkup:
+    inline_keyboard = [
+        [EDIT_CLASSROOM_TITLE.get_button(parameters=[classroom.id])],
+        [DELETE_CLASSROOM.get_button(parameters=[classroom.id])],
+        [get_button_to_prev_menu(button=SPEC_CREATED_CLASSROOM, parameters=[classroom.id])],
     ]
     return types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
 

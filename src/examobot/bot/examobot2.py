@@ -41,10 +41,13 @@ class Form(StatesGroup):
     create_test_link = State()
     create_test_save = State()
 
+    edit_classroom_title = State()
+    create_classroom_title = State()
 
-class Entity(Enum):
-    TEST = "test"
-    CLASSROOM = "classroom"
+
+# class Entity(Enum):
+#     TEST = "test"
+#     CLASSROOM = "classroom"
 
 
 class ValidationPatterns:
@@ -160,11 +163,19 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
         await call.bot.edit_message_text(MAIN_MENU_TEXT, call.from_user.id, call.message.message_id,
                                          reply_markup=get_main_menu_keyboard())
 
+    # CREATED CLASSROOMS
+
     elif AUTHORS_CLASSROOMS.has_that_callback(call.data):
         await handle_authors_classrooms_query(call)
 
     elif CREATE_CLASSROOM.has_that_callback(call.data):
-        await handle_create_classroom_query(call)
+        await handle_create_classroom_query(call, state)
+
+    elif EDIT_CLASSROOM.has_that_callback(call.data):
+        await handle_edit_classroom_query(call)
+
+    elif EDIT_CLASSROOM_TITLE.has_that_callback(call.data):
+        await handle_edit_classroom_title_query(call, state)
 
     # CREATED TESTS
 
@@ -244,6 +255,21 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
 
     elif SPEC_CURRENT_CLASSROOM.has_that_callback(call.data):
         await handle_spec_current_classroom_query(call)
+
+
+async def handle_edit_classroom_title_query(call: types.CallbackQuery, state: FSMContext) -> None:
+    classroom_id = get_test_id_or_classroom_id_from_callback(call.data)
+    await call.bot.edit_message_text("enter new title", call.from_user.id, call.message.message_id)
+    await state.set_state(Form.edit_classroom_title)
+    await state.update_data(edit_classroom_id=classroom_id)
+
+
+async def handle_edit_classroom_query(call: types.CallbackQuery):
+    classroom_id = get_test_id_or_classroom_id_from_callback(call.data)
+    classroom = await db_manager.get_classroom_by_id(classroom_id)
+    await call.bot.edit_message_text(f"edit classroom \"{classroom.title}\"",
+                                     call.from_user.id, call.message.message_id,
+                                     reply_markup=get_edit_classroom_keyboard(classroom))
 
 
 async def check_test_or_classroom_was_deleted_and_inform_user(entity: Test | Classroom, text,
@@ -505,6 +531,20 @@ async def handle_edit_test_link_query(call: types.CallbackQuery, state: FSMConte
     )
 
 
+@dp.message(Form.edit_classroom_title)
+async def type_edit_classroom_title(message: Message, state: FSMContext):
+    if not re.fullmatch(ValidationPatterns.TITLE, message.text.strip()):
+        await message.answer(text="title may contain letters, digits and spaces. please, rewrite")
+        return
+
+    data = await state.get_data()
+    await db_manager.update_classroom_by_id(data["edit_classroom_id"], title=message.text.strip())
+    await state.clear()
+    await message.answer("successfully edited")
+    await message.bot.send_message(text=MAIN_MENU_TEXT, chat_id=message.from_user.id,
+                                   reply_markup=get_main_menu_keyboard())
+
+
 @dp.message(Form.edit_test_title)
 async def type_edit_test(message: Message, state: FSMContext):
     if not re.fullmatch(ValidationPatterns.TITLE, message.text.strip()):
@@ -621,6 +661,19 @@ async def type_create_test(message: Message, state: FSMContext):
     await message.answer(text="type test duration in minutes")
 
 
+@dp.message(Form.create_classroom_title)
+async def type_create_classroom(message: Message, state: FSMContext):
+    if not re.fullmatch(ValidationPatterns.TITLE, message.text.strip()):
+        await message.answer(text="title may contain letters, digits and spaces. please, rewrite")
+        return
+
+    await state.clear()
+    await db_manager.add_classroom(title=message.text.strip(), author_id=message.from_user.id)
+    await message.bot.send_message(text=f"classroom \"{message.text.strip()}\" created", chat_id=message.from_user.id)
+    await message.bot.send_message(text=MAIN_MENU_TEXT, chat_id=message.from_user.id,
+                                   reply_markup=get_main_menu_keyboard())
+
+
 @dp.message(Form.create_test_time)
 async def type_create_test(message: Message, state: FSMContext):
     if not re.fullmatch(ValidationPatterns.TIME, message.text.strip()):
@@ -721,11 +774,13 @@ async def create_test_save(message: Message, state: FSMContext):
     await state.clear()
 
 
-async def handle_create_classroom_query(call: types.CallbackQuery) -> None:
-    await db_manager.add_classroom(title="title cls", author_id=call.from_user.id)
-    classrooms = await db_manager.get_classrooms_by_author_id(call.from_user.id)
-    await call.bot.edit_message_text("classroom created", call.from_user.id, call.message.message_id,
-                                     reply_markup=get_classrooms_keyboard(classrooms))
+async def handle_create_classroom_query(call: types.CallbackQuery, state: FSMContext) -> None:
+    await call.bot.edit_message_text(
+        "type classroom title",
+        call.from_user.id,
+        call.message.message_id,
+    )
+    await state.set_state(Form.create_classroom_title)
 
 
 async def handle_authors_classrooms_query(call: types.CallbackQuery) -> None:
