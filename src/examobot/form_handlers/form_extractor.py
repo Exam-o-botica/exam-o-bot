@@ -70,3 +70,12 @@ class FormExtractor:
             return json.dumps(res, ensure_ascii=False, indent=4)
         except (errors.HttpError,):
             return None
+
+    @staticmethod
+    async def extract_json(form_url: str) -> Optional[dict]:
+        try:
+            service = FormExtractor._login()
+            res = FormExtractor._get_json(service, form_url)
+            return res
+        except (errors.HttpError,):
+            return None
