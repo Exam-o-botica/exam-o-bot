@@ -1,7 +1,7 @@
 import json
 import re
 import socket
-from typing import Optional
+from typing import Optional, Any
 
 from apiclient import discovery
 from googleapiclient import errors
@@ -23,7 +23,7 @@ store = file.Storage("token.json")
 
 class FormExtractor:
     @staticmethod
-    def _login():
+    def _login() -> Any:
         try:
             creds = store.get()
             if not creds or creds.invalid:
@@ -56,7 +56,7 @@ class FormExtractor:
         return form_id
 
     @staticmethod
-    def _get_json(service, form_url: str) -> dict:
+    def _get_json(service: Any, form_url: str) -> dict:
         form_id = "NOT_SET"
         try:
             form_id = FormExtractor._get_form_id_from_url(form_url)
