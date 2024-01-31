@@ -43,6 +43,15 @@ class Form(StatesGroup):
     create_classroom_title = State()
 
 
+'''
+possible start links: 
+    1. https://t.me/beermovent_bot?start=test={test_id}
+    2. https://t.me/beermovent_bot?start=class={classroom_id}
+    
+    ex1: https://t.me/beermovent_bot?start=class=5069ut54303
+    ex2: https://t.me/beermovent_bot?start=test=50et3695
+'''
+
 CREATION_FORMS = {
     "create_test_title": {
         "form": Form.create_test_title,
@@ -76,14 +85,12 @@ possible start links:
 '''
 
 
-
 class ValidationPatterns:
     TITLE = re.compile(r"(\w|\d)+(\s+(\w|\d)+)*")
     TIME = re.compile(r"\d+")
     DEADLINE = re.compile(r"\d\d\.\d\d\.\d\d\d\d\s\d\d:\d\d")
     ATTEMPTS_NUMBER = re.compile(r"\d+")
     LINK = re.compile(r"(http(s)?://)?docs\.google\.com/forms/d/[_a-zA-Z\d-]+/edit")
-
 
     @staticmethod
     def SHARE_LINK(link_type: str):
@@ -98,7 +105,7 @@ class Validations:
         return match is not None
 
     @staticmethod
-    async def validate_test_title(message: Message, text: str) -> str | None:
+    async def validate_test_title(message: Message, text: str):
         if not re.fullmatch(ValidationPatterns.TITLE, text.strip()):
             await message.answer(text="title may contain letters, digits and spaces. please, rewrite")
             return None
@@ -106,7 +113,7 @@ class Validations:
         return text.strip()
 
     @staticmethod
-    async def validate_test_time(message: Message, text: str) -> str | None:
+    async def validate_test_time(message: Message, text: str):
         if not re.fullmatch(ValidationPatterns.TIME, text.strip()):
             await message.answer(text="duration may contain only digits. please, rewrite")
             return None
@@ -114,7 +121,7 @@ class Validations:
         return text.strip()
 
     @staticmethod
-    async def validate_test_deadline(message: Message, text: str) -> int | None:
+    async def validate_test_deadline(message: Message, text: str):
         if not re.fullmatch(ValidationPatterns.DEADLINE, text.strip()):
             await message.answer(text="please, follow the format: 'DD.MM.YYYY hh:mm'")
             return
@@ -131,7 +138,7 @@ class Validations:
         return timestamp
 
     @staticmethod
-    async def validate_test_attempts_number(message: Message, text: str) -> str | None:
+    async def validate_test_attempts_number(message: Message, text: str):
         if not re.fullmatch(ValidationPatterns.ATTEMPTS_NUMBER, text.strip()):
             await message.answer(text="number of attempts may contain only digits. please, rewrite")
             return None
@@ -310,6 +317,9 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
     elif REFRESH_TEST_DATA.has_that_callback(call.data):
         await handle_refresh_test_data_query(call)
 
+    elif DELETE_TEST.has_that_callback(call.data):
+        await handle_delete_test_query(call)
+
     # CURRENT TESTS
 
     elif CURRENT_TESTS.has_that_callback(call.data):
@@ -415,7 +425,9 @@ async def handle_change_test_status_query(call: types.CallbackQuery, new_status:
 async def handle_spec_current_classroom_query(call: types.CallbackQuery):
     classroom_id = get_test_id_or_classroom_id_from_callback(call.data)
     classroom = await db_manager.get_classroom_by_id(classroom_id)
-    if await check_test_or_classroom_was_deleted_and_inform_user(classroom, "this classroom was deleted", call):
+    if not classroom:
+        await call.bot.edit_message_text("this classroom was deleted", call.from_user.id, call.message.message_id,
+                                         reply_markup=get_go_to_main_menu_keyboard())
         return
     author = await db_manager.get_user_by_id(classroom.author_id)
 
@@ -448,13 +460,27 @@ async def delete_classroom(classroom_id: int):
     await db_manager.delete_classroom(classroom_id)
 
 
+async def handle_delete_test_query(call: types.CallbackQuery) -> None:
+    test_id = get_test_id_or_classroom_id_from_callback(call.data)
+    test = await db_manager.get_test_by_id(test_id)
+    await call.bot.edit_message_text(
+        f"are you sure you wanna delete test \"{test.title}\"?",
+        call.from_user.id,
+        call.message.message_id,
+        reply_markup=get_delete_entity_confirm_keyboard(Entity.TEST, test_id))
+
+
+async def delete_test(test_id: int):
+    await db_manager.delete_test(test_id)
+
+
 async def handle_delete_entity_confirm_query(call: types.CallbackQuery) -> None:
     entity, entity_id = call.data.split("#")[1:]
     print('here,', entity, Entity.CLASSROOM.value, Entity.CLASSROOM.name, Entity.CLASSROOM)
     if entity == Entity.CLASSROOM.name:
         await delete_classroom(int(entity_id))
     else:
-        pass  # todo delete test
+        await delete_test(int(entity_id))
     await call.bot.edit_message_text(f"{entity} successfully deleted", call.from_user.id, call.message.message_id,
                                      reply_markup=get_go_to_main_menu_keyboard())
 
@@ -520,8 +546,8 @@ async def handle_share_test_link_query(call: types.CallbackQuery) -> None:
                                                                                             created_classrooms))
 
 
-def generate_link(type: Entity, uuid: int) -> str:
-    if type == Entity.TEST:
+def generate_link(type_: Entity, uuid: int) -> str:
+    if type_ == Entity.TEST:
         return f"https://t.me/beermovent_bot?start=test={uuid}"
     else:
         return f"https://t.me/beermovent_bot?start=class={uuid}"
@@ -550,11 +576,12 @@ async def handle_current_available_test_with_attempts_query(call: types.Callback
 
 
 def get_spec_test_info_message(test: Test) -> str:
-    msg = f"<b>Test title:</b> {test.title}\n" \
-          f"<b>Test duration:</b> {test.time} min\n" \
-          f"<b>Test deadline:</b> {test.deadline}\n" \
-          f"<b>Test attempts number:</b> {test.attempts_number}\n" \
-          f"<b>Test status:</b> {test.status_set_by_author} {get_emoji_test_status(test.status_set_by_author)}"
+    msg = f"""<b>Test title:</b> {test.title}
+    <b>Test duration:</b> {test.time} min
+    <b>Test deadline:</b> {test.deadline}
+    <b>Test attempts number:</b> {test.attempts_number}
+    <b>Test status:</b> {test.status_set_by_author} {get_emoji_test_status(test.status_set_by_author)}
+    <b>Test link:</b> {test.link}"""
     return msg
 
 
@@ -938,7 +965,6 @@ async def create_test_save_with_additions(state: FSMContext, message: Message = 
             chat_id=call.message.chat.id,
             reply_markup=get_created_tests_keyboard(tests)
         )
-
 
 
 async def handle_create_classroom_query(call: types.CallbackQuery, state: FSMContext) -> None:
