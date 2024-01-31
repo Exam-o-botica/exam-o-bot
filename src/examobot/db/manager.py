@@ -221,12 +221,6 @@ class DBManager:
             classrooms = await session.execute(query)
         return classrooms.scalars().all()
 
-    async def update_test_by_id(self, test_id: int, **kwargs):
-        query = update(Test).values(**kwargs).where(Test.id == test_id)
-        async with self.session_maker() as session:
-            await session.execute(query)
-            await session.commit()
-
 #
 # async def initial_add(self):
 #     async with self.session_maker() as session:
