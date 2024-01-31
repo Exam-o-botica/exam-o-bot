@@ -25,12 +25,12 @@ class JSONParseError(FormAnswerSenderException):
                 f"{self.metadata_text}")
 
 
-class URLError(FormAnswerSenderException):
+class URLFailedCreationError(FormAnswerSenderException):
     def __str__(self):
         return f"Error happened when trying to create link for sending form."
 
 
-class HTMLError(FormAnswerSenderException):
+class HTMLParseError(FormAnswerSenderException):
     def __init__(self, html_str):
         self.text = _shorten(html_str)
 
@@ -44,7 +44,7 @@ class TestCompleteFailError(FormAnswerSenderException):
         return f'Sending answers was failed. Please check that you wrote everything correctly according to form.'
 
 
-class HTTPError(TestCompleteFailError):
+class BadRequestError(TestCompleteFailError):
     def __init__(self, url: str):
         self.url = url
 
