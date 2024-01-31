@@ -776,6 +776,7 @@ async def type_create_test(message: Message, state: FSMContext):
     await state.update_data(test_link=message.text.strip())
     await state.update_data(test_meta_data=meta_data)
     await state.update_data(test_title=meta_data["info"]["title"])
+    await state.update_data(test_responder_uri=meta_data["responderUri"])
 
     await message.answer(
         "do you want to add additional settings for the test?",
@@ -790,6 +791,7 @@ async def handle_save_test_query(call: types.CallbackQuery, state: FSMContext):
         author_id=call.from_user.id,
         link=data["test_link"],
         meta_data=str(data["test_meta_data"]),
+        responder_uri=data["test_responder_uri"],
     )
     # TODO Trigger form-translator
     await state.clear()
@@ -914,6 +916,7 @@ async def create_test_save_with_additions(state: FSMContext, message: Message = 
         "test_deadline_ts": "deadline",
         "test_attempts_number": "attempts_number",
         "test_link": "link",
+        "test_responder_uri": "responder_uri",
     }
     param_dict = {params[param]: data[param] for param in params.keys() if param in data}
     param_dict["author_id"] = user_id
