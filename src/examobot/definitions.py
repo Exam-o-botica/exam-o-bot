@@ -2,6 +2,8 @@ import enum
 import os
 from typing import Optional
 
+from oauth2client import file
+
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # For logging
@@ -18,10 +20,11 @@ DEFAULT_USER_AGENT = "Mozilla/5.0 (Windows NT 6.1; rv:84.0) Gecko/20100101 Firef
 
 # For Google Script API
 FORM_HANDLERS_DIR = os.path.join(ROOT_DIR, "form_handlers")
-GOOGLE_CREDENTIALS = os.path.join(FORM_HANDLERS_DIR, "credentials")
-GOOGLE_CLIENT_SECRETS = os.path.join(GOOGLE_CREDENTIALS, "client_secrets.json")
-GOOGLE_SCRIPT_ID = os.getenv("GOOGLE_SCRIPT_ID")
-
+GOOGLE_CREDENTIALS_DIR = os.path.join(FORM_HANDLERS_DIR, "credentials")
+GOOGLE_CLIENT_SECRETS = os.path.join(GOOGLE_CREDENTIALS_DIR, "client_secrets.json")
+SCOPES = "https://www.googleapis.com/auth/forms.body.readonly"
+DISCOVERY_DOC = "https://forms.googleapis.com/$discovery/rest?version=v1"
+TOKEN_STORE = file.Storage("token.json")
 
 # For localization
 class SupportedLanguages(enum.Enum):

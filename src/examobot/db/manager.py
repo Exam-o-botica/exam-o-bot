@@ -79,7 +79,9 @@ class DBManager:
 
         return tests.scalars().all()
 
-    async def add_test(self, author_id: int, title: str, time: int, deadline: int, attempts_number: int, link: str,
+    async def add_test(self, author_id: int, title: str, time: int, deadline: int,
+                       respondent_uri: str,
+                       attempts_number: int, link: str,
                        meta_data: str):
         new_test = Test(
             uuid=str(uuid.uuid4()),
@@ -88,6 +90,7 @@ class DBManager:
             deadline=deadline,
             attempts_number=attempts_number,
             author_id=author_id,
+            responder_uri=respondent_uri,
             link=link,
             meta_data=meta_data
         )
@@ -188,6 +191,12 @@ class DBManager:
             await session.execute(query)
             await session.commit()
 
+    async def update_classroom_by_id(self, classroom_id: int, **kwargs):
+        query = update(Classroom).values(**kwargs).where(Classroom.id == classroom_id)
+        async with self.session_maker() as session:
+            await session.execute(query)
+            await session.commit()
+
     # CURRENT TESTS
 
     async def get_current_ended_or_with_no_attempts_tests_by_user_id(self, user_id: int):
@@ -212,7 +221,7 @@ class DBManager:
             tasks = await session.execute(query)
 
         return tasks.scalars().all()
-      
+
     async def get_current_classrooms_by_user_id(self, user_id: int):
         query = (
             select(Classroom).join(UserClassroomParticipation).where(

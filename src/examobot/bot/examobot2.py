@@ -11,12 +11,14 @@ from aiogram import Dispatcher, Bot
 from aiogram.filters import CommandStart, CommandObject
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
-from aiogram.types import Message
+from aiogram.types import Message, InputFile
+from io import BytesIO
 
 from consts import *
 from keyboards import *
 from src.examobot.db.manager import DBManager
 from src.examobot.form_handlers import *
+from src.examobot.task_extractor.task_extractor import get_responder_uri
 
 TOKEN = os.getenv("EXAM_O_BOT_TOKEN")
 dp = Dispatcher()
@@ -37,6 +39,8 @@ class Form(StatesGroup):
     create_test_link = State()
     create_test_save = State()
 
+    edit_classroom_title = State()
+    create_classroom_title = State()
 
 '''
 possible start links: 
@@ -47,13 +51,18 @@ possible start links:
     ex2: https://t.me/beermovent_bot?start=test=50et3695
 '''
 
+# class Entity(Enum):
+#     TEST = "test"
+#     CLASSROOM = "classroom"
+
 
 class ValidationPatterns:
     TITLE = re.compile(r"(\w|\d)+(\s+(\w|\d)+)*")
     TIME = re.compile(r"\d+")
     DEADLINE = re.compile(r"\d\d\.\d\d\.\d\d\d\d\s\d\d:\d\d")
     ATTEMPTS_NUMBER = re.compile(r"\d+")
-    LINK = re.compile(r"(http(s)?://)?docs\.google\.com/forms/d/[a-zA-Z\d-]+/edit")
+    LINK = re.compile(r"(http(s)?://)?docs\.google\.com/forms/d/[_a-zA-Z\d-]+/edit")
+
 
     @staticmethod
     def SHARE_LINK(link_type: str):
@@ -518,12 +527,12 @@ async def handle_edit_test_link_query(call: types.CallbackQuery, state: FSMConte
 
 @dp.message(Form.edit_test_title)
 async def type_edit_test(message: Message, state: FSMContext):
-    test_title = Validations.validate_test_title(message=message, text=message.text)
-    if not test_title:
+    if not re.fullmatch(ValidationPatterns.TITLE, message.text.strip()):
+        await message.answer(text="title may contain letters, digits and spaces. please, rewrite")
         return
 
     data = await state.get_data()
-    await db_manager.update_test_by_id(data["edit_test_id"], title=test_title)
+    await db_manager.update_test_by_id(data["edit_test_id"], title=message.text.strip())
     await edit_test_finish(message, state, data["edit_test_id"])
 
 
@@ -562,7 +571,11 @@ async def type_edit_test(message: Message, state: FSMContext):
 async def type_edit_test(message: Message, state: FSMContext):
     if not re.fullmatch(ValidationPatterns.ATTEMPTS_NUMBER, message.text.strip()):
         await message.answer(text="number of attempts may contain only digits. please, rewrite")
-    return
+        return
+
+    data = await state.get_data()
+    await db_manager.update_test_by_id(data["edit_test_id"], time=message.text.strip())
+    await edit_test_finish(message, state, data["edit_test_id"])
 
 
 @dp.message(Form.edit_test_link)
@@ -619,11 +632,11 @@ async def handle_create_test_query(call: types.CallbackQuery, state: FSMContext)
 
 @dp.message(Form.create_test_title)
 async def type_create_test(message: Message, state: FSMContext):
-    test_title = Validations.validate_test_title(message=message, text=message.text)
-    if not test_title:
+    if not re.fullmatch(ValidationPatterns.TITLE, message.text.strip()):
+        await message.answer(text="title may contain letters, digits and spaces. please, rewrite")
         return
 
-    await state.update_data(test_title=test_title)
+    await state.update_data(test_title=message.text.strip())
     await state.set_state(Form.create_test_time)
     await message.answer(text="type test duration in minutes")
 

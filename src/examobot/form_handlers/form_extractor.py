@@ -1,20 +1,16 @@
 import json
 import re
 import socket
-from typing import Optional
+from typing import Optional, Any
 
 from apiclient import discovery
 from googleapiclient import errors
 from httplib2 import Http
-from oauth2client import client, file, tools
+from oauth2client import client, tools
 
-from src.examobot.definitions import GOOGLE_CLIENT_SECRETS
+from src.examobot.definitions import GOOGLE_CLIENT_SECRETS, TOKEN_STORE, SCOPES, DISCOVERY_DOC
 
 socket.setdefaulttimeout(120)
-
-SCOPES = "https://www.googleapis.com/auth/forms.body.readonly"
-DISCOVERY_DOC = "https://forms.googleapis.com/$discovery/rest?version=v1"
-store = file.Storage("token.json")
 
 
 # TODO: 2. Parse every question to message
@@ -23,12 +19,12 @@ store = file.Storage("token.json")
 
 class FormExtractor:
     @staticmethod
-    def _login():
+    def _login() -> Any:
         try:
-            creds = store.get()
+            creds = TOKEN_STORE.get()
             if not creds or creds.invalid:
                 flow = client.flow_from_clientsecrets(str(GOOGLE_CLIENT_SECRETS), SCOPES)
-                creds = tools.run_flow(flow, store)
+                creds = tools.run_flow(flow, TOKEN_STORE)
 
             service = discovery.build(
                 "forms",
@@ -56,7 +52,7 @@ class FormExtractor:
         return form_id
 
     @staticmethod
-    def _get_json(service, form_url: str) -> dict:
+    def _get_json(service: Any, form_url: str) -> dict:
         form_id = "NOT_SET"
         try:
             form_id = FormExtractor._get_form_id_from_url(form_url)
@@ -72,5 +68,14 @@ class FormExtractor:
             service = FormExtractor._login()
             res = FormExtractor._get_json(service, form_url)
             return json.dumps(res, ensure_ascii=False, indent=4)
+        except (errors.HttpError,):
+            return None
+
+    @staticmethod
+    async def extract_json(form_url: str) -> Optional[dict]:
+        try:
+            service = FormExtractor._login()
+            res = FormExtractor._get_json(service, form_url)
+            return res
         except (errors.HttpError,):
             return None

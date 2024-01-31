@@ -3,6 +3,8 @@
 /data/  
 /examobot/
 __pycache__/
+
 /src/examobot/form_handlers/credentials/client_secrets.json
 /src/examobot/bot/mydatabase.db
 /src/examobot/bot/token.json
+/src/examobot/form_handlers/examples/aisecSurveyForm.json

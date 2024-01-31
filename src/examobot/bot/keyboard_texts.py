@@ -54,6 +54,10 @@ DELETE_CLASSROOM = Button(name='DELETE_CLASSROOM', text='delete classroom')
 
 SHOW_CLASSROOM_PARTICIPANTS = Button(name='SHOW_CLASSROOM_PARTICIPANTS', text='show participants')
 
+EDIT_CLASSROOM = Button(name='EDIT_CLASSROOM', text='edit classroom')
+
+EDIT_CLASSROOM_TITLE = Button(name='EDIT_CLASSROOM_TITLE', text='edit title')
+
 # created Tests
 
 AUTHORS_TESTS = Button(name='AUTHORS_TESTS', text='created tests')
@@ -100,6 +104,8 @@ SPEC_CURRENT_CLASSROOM = Button(name='SPEC_CURRENT_CLASSROOM', text='specific cu
 CURRENT_TESTS = Button(name='CURRENT_TESTS', text='current tests')
 
 SPEC_CURRENT_TEST = Button(name='SPEC_CURRENT_TEST', text='specific current test')
+
+START_CURRENT_TEST = Button(name='START_CURRENT_TEST', text='start test')
 
 CURRENT_ENDED_OR_WITH_NO_ATTEMPTS_TESTS = Button(
     name='CURRENT_ENDED_OR_WITH_NO_ATTEMPTS_TESTS', text='ended tests')
