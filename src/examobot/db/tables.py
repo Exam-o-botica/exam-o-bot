@@ -127,7 +127,7 @@ class Task(Base):
     task_type: Mapped[str] = mapped_column(nullable=False)
     # meta_data: Mapped[Optional[str]] = mapped_column(nullable=True, default=None)
 
-    # answers: Mapped[List["Answer"]] = relationship(back_populates="task", cascade="all,delete")  # Parent
+    answers: Mapped[List["Answer"]] = relationship(back_populates="task", cascade="all,delete")  # Parent
 
     test_id: Mapped[int] = mapped_column(ForeignKey("tests.id"), nullable=False)
     test: Mapped[Test] = relationship(back_populates="tasks")  # Child
@@ -143,7 +143,7 @@ class Answer(Base):
     status: Mapped[AnswerStatus] = mapped_column(nullable=False, default=AnswerStatus.UNCHECKED)
 
     task_id: Mapped[int] = mapped_column(ForeignKey("tasks.id"))  # Child
-    # task: Mapped[Task] = relationship(back_populates="answers")
+    task: Mapped[Task] = relationship(back_populates="answers")
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))  # Child
     user: Mapped[User] = relationship(back_populates="answers")

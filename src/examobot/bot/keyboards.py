@@ -26,9 +26,14 @@ def get_authors_buttons_():
 
 
 def get_delete_entity_confirm_keyboard(entity: Entity, entity_id: int):
+    if entity == Entity.TEST:
+        button = SPEC_CREATED_TEST
+    else:
+        button = SPEC_CREATED_CLASSROOM
+
     inline_keyboard = [
         [DELETE_ENTITY_CONFIRM.get_button(parameters=[entity.name, entity_id])],
-        [get_button_to_prev_menu(button=SPEC_CREATED_CLASSROOM, parameters=[entity_id], new_text=CANCEL_TEXT)],
+        [get_button_to_prev_menu(button=button, parameters=[entity_id], new_text=CANCEL_TEXT)],
     ]
     return types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
 

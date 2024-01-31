@@ -451,9 +451,11 @@ async def handle_current_classrooms_query(call: types.CallbackQuery) -> None:
 async def handle_delete_classroom_query(call: types.CallbackQuery) -> None:
     classroom_id = get_test_id_or_classroom_id_from_callback(call.data)
     classroom = await db_manager.get_classroom_by_id(classroom_id)
-    await call.bot.edit_message_text(f"are you sure you wanna delete classroom \"{classroom.title}\"?",
-                                     call.from_user.id, call.message.message_id,
-                                     reply_markup=get_delete_entity_confirm_keyboard(Entity.CLASSROOM, classroom_id))
+    await call.bot.edit_message_text(
+        f"are you sure you wanna delete classroom \"{classroom.title}\"?",
+        call.from_user.id,
+        call.message.message_id,
+        reply_markup=get_delete_entity_confirm_keyboard(Entity.CLASSROOM, classroom_id))
 
 
 async def delete_classroom(classroom_id: int):
