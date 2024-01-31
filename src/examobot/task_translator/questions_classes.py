@@ -48,7 +48,7 @@ class StringOrTextQuestion(Question):
         if not self.task.input_media:
             await bot.send_message(chat_id=user_id, text=self.task.text)
             return
-        await bot.send_photo(chat_id=user_id, photo=self.task.input_media,  # todo maybe incorrect media type
+        await bot.send_photo(chat_id=user_id, photo=str(self.task.input_media),  # todo maybe incorrect media type
                              caption=str(self.task.text))
 
     def validate_answer(self, message: types.Message):
@@ -63,3 +63,5 @@ class StringOrTextQuestion(Question):
     def get_answer(self, message: types.Message) -> Answer:
         return Answer(text=message.text, status=AnswerStatus.UNCHECKED,
                       task_id=self.task.id, user_id=message.from_user.id)
+
+

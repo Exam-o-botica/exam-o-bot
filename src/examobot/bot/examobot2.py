@@ -799,10 +799,7 @@ async def handle_save_test_query(call: types.CallbackQuery, state: FSMContext):
     string_json = data["test_meta_data"]
 
     responder_uri = Translator.get_responder_uri(string_json)
-    if "title" in data:
-        title = data["title"]
-    else:
-        title = Translator.get_form_title(string_json)
+    title = Translator.get_form_title(string_json) if not data['title'] else data['title']
 
     tasks = await translate_to_task(string_json, call.bot)
     if not tasks:
@@ -963,11 +960,10 @@ async def create_test_save_with_additions(state: FSMContext, message: Message = 
     string_json = data["test_meta_data"]
 
     responder_uri = Translator.get_responder_uri(string_json)
-    title = Translator.get_form_title(string_json)
-
     param_dict["responder_uri"] = responder_uri
-    if "title" not in param_dict:
-        param_dict["title"] = title
+
+    if not param_dict["title"]:
+        param_dict["title"] = Translator.get_form_title(string_json)
 
     tasks = await translate_to_task(string_json, call.bot)
     if not tasks:
