@@ -26,7 +26,7 @@ class Question(ABC):
     @abstractmethod
     def get_answer(self, message: types.Message) -> None:
         """
-        convert user answer message to Answer table object
+        Converts user answer message to Answer table object
         """
         pass
 
@@ -48,8 +48,11 @@ class StringOrTextQuestion(Question):
         if not self.task.input_media:
             await bot.send_message(chat_id=user_id, text=self.task.text)
             return
-        await bot.send_photo(chat_id=user_id, photo=self.task.input_media,  # todo maybe incorrect media type
-                             caption=str(self.task.text))
+        await bot.send_photo(
+            chat_id=user_id,
+            photo=self.task.input_media,  # todo maybe incorrect media type
+            caption=str(self.task.text)
+        )
 
     def validate_answer(self, message: types.Message):
         if not message.text:
