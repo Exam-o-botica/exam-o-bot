@@ -90,6 +90,7 @@ class Test(Base):
     status_set_by_author: Mapped[TestStatus] = mapped_column(nullable=False, default=TestStatus.AVAILABLE)
     link: Mapped[str] = mapped_column(nullable=False)
     meta_data: Mapped[Optional[str]] = mapped_column(nullable=False, default=None)
+    responder_uri: Mapped[str] = mapped_column(nullable=False)
 
     author_id: Mapped[BigInteger] = mapped_column(ForeignKey("users.id"), nullable=False)
     author: Mapped[User] = relationship(back_populates="created_tests")  # Child
@@ -111,18 +112,22 @@ class Task(Base):
     __tablename__ = 'tasks'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    uuid: Mapped[str] = mapped_column(index=True, autoincrement=False)
+    google_form_question_id: Mapped[str] = mapped_column(index=True, autoincrement=False)
 
-    order_id: Mapped[int] = mapped_column(nullable=False, default=1)
-    title: Mapped[Optional[str]] = mapped_column(nullable=True, default=None)
+    # order_id: Mapped[int] = mapped_column(nullable=False, default=1)
+    # title: Mapped[Optional[str]] = mapped_column(nullable=True, default=None)
     text: Mapped[str] = mapped_column(nullable=False)
-    correct_answer: Mapped[Optional[str]] = mapped_column(nullable=True, default=None)
-    images = Column(LargeBinary, nullable=True, default=None)
-    score: Mapped[int] = mapped_column(nullable=False, default=0)
-    task_type: Mapped[str] = mapped_column(nullable=False)
-    meta_data: Mapped[Optional[str]] = mapped_column(nullable=True, default=None)
+    description: Mapped[Optional[str]] = mapped_column(nullable=True, default=None)
+    required: Mapped[bool] = mapped_column(nullable=False, default=False)
 
-    answers: Mapped[List["Answer"]] = relationship(back_populates="task", cascade="all,delete")  # Parent
+    input_media: Mapped[Optional[str]] = mapped_column(nullable=True, default=None)  # todo maybe change type
+    # correct_answer: Mapped[Optional[str]] = mapped_column(nullable=True, default=None)
+    # images = Column(LargeBinary, nullable=True, default=None)
+    # score: Mapped[int] = mapped_column(nullable=False, default=0)
+    task_type: Mapped[str] = mapped_column(nullable=False)
+    # meta_data: Mapped[Optional[str]] = mapped_column(nullable=True, default=None)
+
+    # answers: Mapped[List["Answer"]] = relationship(back_populates="task", cascade="all,delete")  # Parent
 
     test_id: Mapped[int] = mapped_column(ForeignKey("tests.id"), nullable=False)
     test: Mapped[Test] = relationship(back_populates="tasks")  # Child
@@ -132,13 +137,13 @@ class Answer(Base):
     __tablename__ = 'answers'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    uuid: Mapped[str] = mapped_column(index=True, autoincrement=False)
+    # uuid: Mapped[str] = mapped_column(index=True, autoincrement=False)
 
     text: Mapped[Optional[str]] = mapped_column(nullable=True, default=None)
     status: Mapped[AnswerStatus] = mapped_column(nullable=False, default=AnswerStatus.UNCHECKED)
 
     task_id: Mapped[int] = mapped_column(ForeignKey("tasks.id"))  # Child
-    task: Mapped[Task] = relationship(back_populates="answers")
+    # task: Mapped[Task] = relationship(back_populates="answers")
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))  # Child
     user: Mapped[User] = relationship(back_populates="answers")
