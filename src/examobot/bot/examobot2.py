@@ -317,6 +317,9 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
     elif REFRESH_TEST_DATA.has_that_callback(call.data):
         await handle_refresh_test_data_query(call)
 
+    elif DELETE_TEST.has_that_callback(call.data):
+        await handle_delete_test_query(call)
+
     # CURRENT TESTS
 
     elif CURRENT_TESTS.has_that_callback(call.data):
@@ -457,13 +460,27 @@ async def delete_classroom(classroom_id: int):
     await db_manager.delete_classroom(classroom_id)
 
 
+async def handle_delete_test_query(call: types.CallbackQuery) -> None:
+    test_id = get_test_id_or_classroom_id_from_callback(call.data)
+    test = await db_manager.get_test_by_id(test_id)
+    await call.bot.edit_message_text(
+        f"are you sure you wanna delete test \"{test.title}\"?",
+        call.from_user.id,
+        call.message.message_id,
+        reply_markup=get_delete_entity_confirm_keyboard(Entity.TEST, test_id))
+
+
+async def delete_test(test_id: int):
+    await db_manager.delete_test(test_id)
+
+
 async def handle_delete_entity_confirm_query(call: types.CallbackQuery) -> None:
     entity, entity_id = call.data.split("#")[1:]
     print('here,', entity, Entity.CLASSROOM.value, Entity.CLASSROOM.name, Entity.CLASSROOM)
     if entity == Entity.CLASSROOM.name:
         await delete_classroom(int(entity_id))
     else:
-        pass  # todo delete test
+        await delete_test(int(entity_id))
     await call.bot.edit_message_text(f"{entity} successfully deleted", call.from_user.id, call.message.message_id,
                                      reply_markup=get_go_to_main_menu_keyboard())
 
@@ -529,8 +546,8 @@ async def handle_share_test_link_query(call: types.CallbackQuery) -> None:
                                                                                             created_classrooms))
 
 
-def generate_link(type: Entity, uuid: int) -> str:
-    if type == Entity.TEST:
+def generate_link(type_: Entity, uuid: int) -> str:
+    if type_ == Entity.TEST:
         return f"https://t.me/beermovent_bot?start=test={uuid}"
     else:
         return f"https://t.me/beermovent_bot?start=class={uuid}"

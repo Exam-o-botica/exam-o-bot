@@ -123,6 +123,7 @@ def get_spec_created_test_keyboard(test: Test):
         [action.get_button(parameters=[test.id])],
         [REFRESH_TEST_DATA.get_button(parameters=[test.id])],
         [EDIT_TEST.get_button(parameters=[test.id])],
+        [DELETE_TEST.get_button(parameters=[test.id])],
         [SHARE_TEST_LINK.get_button(parameters=[test.id])],
         [AUTHORS_TESTS.get_button(new_text=GO_TO_PREVIOUS_MENU_TEXT)],
     ]

@@ -106,18 +106,26 @@ class DBManager:
 
     async def delete_classroom(self, classroom_id: int):
         classroom = await self.get_classroom_by_id(classroom_id)
-        query2 = select(UserClassroomParticipation).where(UserClassroomParticipation.classroom_id == classroom_id)
+        query = select(UserClassroomParticipation).where(UserClassroomParticipation.classroom_id == classroom_id)
         async with self.session_maker() as session:
-            # res1 = await session.execute(query1)
-            res2 = await session.execute(query2)
-            items = res2.scalars().all()
+            res = await session.execute(query)
+            items = res.scalars().all()
             for i in items:
                 await session.delete(i)
-            # classrooms, user_classrooms = res1.scalars().all(), res2.scalars().all()
-            # for i in cl
-            # map(session.delete, classrooms)
-            # map(session.delete, user_classrooms)
+
             await session.delete(classroom)
+            await session.commit()
+
+    async def delete_test(self, test_id: int):
+        test = await self.get_test_by_id(test_id)
+        query = select(UserTestParticipation).where(UserTestParticipation.test_id == test_id)
+        async with self.session_maker() as session:
+            res = await session.execute(query)
+            items = res.scalars().all()
+            for i in items:
+                await session.delete(i)
+
+            await session.delete(test)
             await session.commit()
 
     async def get_classroom_by_uuid(self, classroom_uuid: str) -> Classroom:
