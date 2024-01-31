@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 import os
 import re
@@ -38,6 +39,7 @@ class Form(StatesGroup):
     create_test_attempts_number = State()
     create_test_link = State()
     create_test_save = State()
+    create_test_save_with_additions = State()
 
     edit_classroom_title = State()
     create_classroom_title = State()
@@ -51,9 +53,38 @@ possible start links:
     ex2: https://t.me/beermovent_bot?start=test=50et3695
 '''
 
-# class Entity(Enum):
-#     TEST = "test"
-#     CLASSROOM = "classroom"
+CREATION_FORMS = {
+    "create_test_title": {
+        "form": Form.create_test_title,
+        "state_text": "type test title #",
+        "next_state": "create_test_time",
+    },
+    "create_test_time": {
+        "form": Form.create_test_time,
+        "state_text": "type test time #",
+        "next_state": "create_test_deadline",
+    },
+    "create_test_deadline": {
+        "form": Form.create_test_deadline,
+        "state_text": "type test deadline #",
+        "next_state": "create_test_attempts_number",
+    },
+    "create_test_attempts_number": {
+        "form": Form.create_test_attempts_number,
+        "state_text": "type test attempts number #",
+        "next_state": "create_test_save_with_additions",
+    },
+}
+
+'''
+possible start links: 
+    1. https://t.me/beermovent_bot?start=test={test_id}
+    2. https://t.me/beermovent_bot?start=class={classroom_id}
+    
+    ex1: https://t.me/beermovent_bot?start=class=5069ut54303
+    ex2: https://t.me/beermovent_bot?start=test=50et3695
+'''
+
 
 
 class ValidationPatterns:
@@ -207,16 +238,33 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
         await call.bot.edit_message_text(MAIN_MENU_TEXT, call.from_user.id, call.message.message_id,
                                          reply_markup=get_main_menu_keyboard())
 
+    # CREATED CLASSROOMS
+
     elif AUTHORS_CLASSROOMS.has_that_callback(call.data):
         await handle_authors_classrooms_query(call)
 
     elif CREATE_CLASSROOM.has_that_callback(call.data):
-        await handle_create_classroom_query(call)
+        await handle_create_classroom_query(call, state)
+
+    elif EDIT_CLASSROOM.has_that_callback(call.data):
+        await handle_edit_classroom_query(call)
+
+    elif EDIT_CLASSROOM_TITLE.has_that_callback(call.data):
+        await handle_edit_classroom_title_query(call, state)
 
     # CREATED TESTS
 
     elif CREATE_TEST.has_that_callback(call.data):
         await handle_create_test_query(call, state)
+
+    elif SAVE_TEST.has_that_callback(call.data):
+        await handle_save_test_query(call, state)
+
+    elif SAVE_TEST_WITH_ADDITIONALS.has_that_callback(call.data):
+        await handle_save_test_with_additionals_query(call, state)
+
+    elif CANCEL_ADDITION.has_that_callback(call.data):
+        await handle_cancel_addition_query(call, state)
 
     elif EDIT_TEST.has_that_callback(call.data):
         await handle_edit_test_query(call, state)
@@ -237,7 +285,7 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
         await handle_edit_test_link_query(call, state)
 
     elif AUTHORS_TESTS.has_that_callback(call.data):
-        await handle_authors_tests_query(call)
+        await handle_authors_tests_query(call, state)
 
     elif SPEC_CREATED_TEST.has_that_callback(call.data):
         await handle_spec_created_test_query(call, state)
@@ -269,6 +317,9 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
     elif OPEN_TEST.has_that_callback(call.data):
         await handle_change_test_status_query(call, TestStatus.AVAILABLE)
 
+    elif REFRESH_TEST_DATA.has_that_callback(call.data):
+        await handle_refresh_test_data_query(call)
+
     # CURRENT TESTS
 
     elif CURRENT_TESTS.has_that_callback(call.data):
@@ -281,6 +332,9 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
     elif CURRENT_ENDED_OR_WITH_NO_ATTEMPTS_TESTS.has_that_callback(call.data):
         await handle_current_ended_or_with_no_attempts_tests_query(call)
 
+    elif SPEC_CURRENT_TEST.has_that_callback(call.data):
+        await handle_spec_current_test_query(call)
+
     # CURRENT CLASSROOMS
 
     elif CURRENT_CLASSROOMS.has_that_callback(call.data):
@@ -290,18 +344,82 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
         await handle_spec_current_classroom_query(call)
 
 
-async def handle_change_test_status_query(call: types.CallbackQuery, new_status: TestStatus) -> None:
+async def write_json_to_file(data):
+    with open("test.json", "w") as f:
+        json.dump(data, f)
+
+
+async def handle_refresh_test_data_query(call: types.CallbackQuery):
     test_id = get_test_id_or_classroom_id_from_callback(call.data)
     test = await db_manager.get_test_by_id(test_id)
+    meta_data = await FormExtractor.extract(form_url=test.link)
+    if not meta_data:
+        await call.bot.edit_message_text(
+            "unfortunately, I can't parse your Google form for some reason.",
+            call.from_user.id, call.message.message_id,
+            reply_markup=go_to_previous_menu_keyboard(SPEC_CREATED_TEST, [test_id]))
+        return
+    await db_manager.update_test_by_id(test_id, meta_data=meta_data)
+    await write_json_to_file(meta_data)  # todo delete it
+
+    await call.bot.edit_message_text("test data was successfully updated",
+                                     call.from_user.id, call.message.message_id,
+                                     reply_markup=go_to_previous_menu_keyboard(SPEC_CREATED_TEST, [test_id]))
+
+
+async def handle_edit_classroom_title_query(call: types.CallbackQuery, state: FSMContext) -> None:
+    classroom_id = get_test_id_or_classroom_id_from_callback(call.data)
+    await call.bot.edit_message_text("enter new title", call.from_user.id, call.message.message_id)
+    await state.set_state(Form.edit_classroom_title)
+    await state.update_data(edit_classroom_id=classroom_id)
+
+
+async def handle_edit_classroom_query(call: types.CallbackQuery):
+    classroom_id = get_test_id_or_classroom_id_from_callback(call.data)
+    classroom = await db_manager.get_classroom_by_id(classroom_id)
+    await call.bot.edit_message_text(f"edit classroom \"{classroom.title}\"",
+                                     call.from_user.id, call.message.message_id,
+                                     reply_markup=get_edit_classroom_keyboard(classroom))
+
+
+async def check_test_or_classroom_was_deleted_and_inform_user(entity: Test | Classroom, text,
+                                                              call: types.CallbackQuery):
+    if entity:
+        return False
+    await call.bot.edit_message_text(text, call.from_user.id, call.message.message_id,
+                                     reply_markup=get_go_to_main_menu_keyboard())
+    return True
+
+
+async def handle_spec_current_test_query(call: types.CallbackQuery):
+    test_id = get_test_id_or_classroom_id_from_callback(call.data)
+    test = await db_manager.get_test_by_id(test_id)
+
+    if await check_test_or_classroom_was_deleted_and_inform_user(test, "this test was deleted", call):
+        return
+
+    await call.bot.edit_message_text(get_spec_test_info_message(test),
+                                     call.from_user.id, call.message.message_id,
+                                     reply_markup=get_spec_current_test_keyboard(test),
+                                     parse_mode="HTML")
+
+
+async def handle_change_test_status_query(call: types.CallbackQuery, new_status: TestStatus) -> None:
+    test_id = get_test_id_or_classroom_id_from_callback(call.data)
     updated_values = {'status_set_by_author': new_status}
     await db_manager.update_test_by_id(test_id, **updated_values)
+    test = await db_manager.get_test_by_id(test_id)
 
     # todo don't need to invoke get_spec_test_info_message, hjust change msg to make it quicker
+
+    key_word = "opened" if new_status == TestStatus.AVAILABLE else "closed"
 
     await call.bot.edit_message_text(get_spec_test_info_message(test),
                                      call.from_user.id, call.message.message_id,
                                      reply_markup=get_spec_created_test_keyboard(test),
                                      parse_mode="HTML")
+
+    await call.bot.answer_callback_query(call.id, f"test {key_word}")
 
 
 async def handle_spec_current_classroom_query(call: types.CallbackQuery):
@@ -514,6 +632,7 @@ async def handle_edit_test_deadline_query(call: types.CallbackQuery, state: FSMC
 
 
 async def handle_edit_test_attempts_number_query(call: types.CallbackQuery, state: FSMContext):
+    # todo check that number of attempts is not less than max number of attempts made by users already
     await handle_edit_test_something_query(
         call, state, Form.edit_test_attempts_number, "type new test attempts number"
     )
@@ -525,56 +644,61 @@ async def handle_edit_test_link_query(call: types.CallbackQuery, state: FSMConte
     )
 
 
-@dp.message(Form.edit_test_title)
-async def type_edit_test(message: Message, state: FSMContext):
+@dp.message(Form.edit_classroom_title)
+async def type_edit_classroom_title(message: Message, state: FSMContext):
     if not re.fullmatch(ValidationPatterns.TITLE, message.text.strip()):
         await message.answer(text="title may contain letters, digits and spaces. please, rewrite")
         return
 
     data = await state.get_data()
-    await db_manager.update_test_by_id(data["edit_test_id"], title=message.text.strip())
+    await db_manager.update_classroom_by_id(data["edit_classroom_id"], title=message.text.strip())
+    await state.clear()
+    await message.answer("successfully edited")
+    await message.bot.send_message(text=MAIN_MENU_TEXT, chat_id=message.from_user.id,
+                                   reply_markup=get_main_menu_keyboard())
+
+
+@dp.message(Form.edit_test_title)
+async def type_edit_test(message: Message, state: FSMContext):
+    test_title = await Validations.validate_test_title(message=message, text=message.text)
+    if not test_title:
+        return
+
+    data = await state.get_data()
+    await db_manager.update_test_by_id(data["edit_test_id"], title=test_title)
     await edit_test_finish(message, state, data["edit_test_id"])
 
 
 @dp.message(Form.edit_test_time)
 async def type_edit_test(message: Message, state: FSMContext):
-    if not re.fullmatch(ValidationPatterns.TIME, message.text.strip()):
-        await message.answer(text="duration may contain only digits. please, rewrite")
+    test_time = await Validations.validate_test_time(message=message, text=message.text)
+    if not test_time:
         return
 
     data = await state.get_data()
-    await db_manager.update_test_by_id(data["edit_test_id"], time=message.text.strip())
+    await db_manager.update_test_by_id(data["edit_test_id"], time=test_time)
     await edit_test_finish(message, state, data["edit_test_id"])
 
 
 @dp.message(Form.edit_test_deadline)
 async def type_edit_test(message: Message, state: FSMContext):
-    if not re.fullmatch(ValidationPatterns.DEADLINE, message.text.strip()):
-        await message.answer(text="please, follow the format: 'DD.MM.YYYY hh:mm'")
-        return
-
-    try:
-        timestamp = int(
-            time.mktime(
-                datetime.strptime(message.text.strip(), "%d.%m.%Y %H:%M").timetuple()))
-    except Exception as e:
-        pprint(f"Deadline error: {e}")
-        await message.answer(text="seems like there is some error with the date. please, retry")
+    timestamp = await Validations.validate_test_deadline(message=message, text=message.text)
+    if not timestamp:
         return
 
     data = await state.get_data()
-    await db_manager.update_test_by_id(data["edit_test_id"], time=timestamp)
+    await db_manager.update_test_by_id(data["edit_test_id"], deadline=timestamp)
     await edit_test_finish(message, state, data["edit_test_id"])
 
 
 @dp.message(Form.edit_test_attempts_number)
 async def type_edit_test(message: Message, state: FSMContext):
-    if not re.fullmatch(ValidationPatterns.ATTEMPTS_NUMBER, message.text.strip()):
-        await message.answer(text="number of attempts may contain only digits. please, rewrite")
+    test_attempts_number = await Validations.validate_test_attempts_number(message=message, text=message.text)
+    if not test_attempts_number:
         return
 
     data = await state.get_data()
-    await db_manager.update_test_by_id(data["edit_test_id"], time=message.text.strip())
+    await db_manager.update_test_by_id(data["edit_test_id"], attempts_number=test_attempts_number)
     await edit_test_finish(message, state, data["edit_test_id"])
 
 
@@ -608,7 +732,7 @@ async def type_edit_test(message: Message, state: FSMContext):
         )
         return
 
-    await db_manager.update_test_by_id(data["edit_test_id"], time=message.text.strip())
+    await db_manager.update_test_by_id(data["edit_test_id"], link=message.text.strip())
     await edit_test_finish(message, state, data["edit_test_id"])
 
 
@@ -623,7 +747,7 @@ async def edit_test_finish(message: Message, state: FSMContext, test_id: int):
 
 async def handle_create_test_query(call: types.CallbackQuery, state: FSMContext) -> None:
     await call.bot.edit_message_text(
-        "type test title",
+        "type test link",
         call.from_user.id,
         call.message.message_id,
     )
@@ -639,6 +763,19 @@ async def type_create_test(message: Message, state: FSMContext):
     await state.update_data(test_title=message.text.strip())
     await state.set_state(Form.create_test_time)
     await message.answer(text="type test duration in minutes")
+
+
+@dp.message(Form.create_classroom_title)
+async def type_create_classroom(message: Message, state: FSMContext):
+    if not re.fullmatch(ValidationPatterns.TITLE, message.text.strip()):
+        await message.answer(text="title may contain letters, digits and spaces. please, rewrite")
+        return
+
+    await state.clear()
+    await db_manager.add_classroom(title=message.text.strip(), author_id=message.from_user.id)
+    await message.bot.send_message(text=f"classroom \"{message.text.strip()}\" created", chat_id=message.from_user.id)
+    await message.bot.send_message(text=MAIN_MENU_TEXT, chat_id=message.from_user.id,
+                                   reply_markup=get_main_menu_keyboard())
 
 
 @dp.message(Form.create_test_time)
@@ -694,6 +831,7 @@ async def type_create_test(message: Message, state: FSMContext):
         "now, I'll check if form could be parsed. please make sure that your form...(some constraints)",
     )
     meta_data = await FormExtractor.extract(form_url=message.text.strip())
+    meta_data = json.loads(meta_data)
     if not meta_data and "second_form_attempt" not in data:
         await message.answer(
             "unfortunately, I can't parse your Google form for some reason. "
@@ -716,29 +854,161 @@ async def type_create_test(message: Message, state: FSMContext):
 
     await state.update_data(test_link=message.text.strip())
     await state.update_data(test_meta_data=meta_data)
-    await state.set_state(Form.create_test_save)
-    await create_test_save(message, state)
+    await state.update_data(test_title=meta_data["info"]["title"])
 
-
-async def create_test_save(message: Message, state: FSMContext):
-    data = await state.get_data()
-    await db_manager.add_test(
-        title=data["test_title"],
-        author_id=message.from_user.id,
-        time=data["test_time"],
-        deadline=data["test_deadline_ts"],
-        attempts_number=data["test_attempts_number"],
-        link=data["test_link"],
-        meta_data=data["test_meta_data"],
-    )
-    await message.answer(data["test_meta_data"])  # DELETE THIS
-
-    tests = await db_manager.get_tests_by_author_id(message.from_user.id)
     await message.answer(
-        "test creation finished",
+        "do you want to add additional settings for the test?",
+        reply_markup=get_created_test_additionals_keyboard()
+    )
+
+
+async def handle_save_test_query(call: types.CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    new_test = await db_manager.add_test(
+        title=data["test_title"],
+        author_id=call.from_user.id,
+        link=data["test_link"],
+        meta_data=str(data["test_meta_data"]),
+        respondent_uri=get_responder_uri(data["test_meta_data"]),
+    )
+
+    new_test_id = new_test.id
+    # todo invoke json extractor here
+    print(data["test_meta_data"])
+    # await message.answer(data["test_meta_data"])  # DELETE THIS
+
+
+    # TODO Trigger form-translator
+    await state.clear()
+    tests = await db_manager.get_tests_by_author_id(call.from_user.id)
+    await call.bot.send_message(
+        text="test is saved",
+        chat_id=call.message.chat.id,
         reply_markup=get_created_tests_keyboard(tests)
     )
+
+
+async def handle_save_test_with_additionals_query(call: types.CallbackQuery, state: FSMContext):
+    await state.set_state(Form.create_test_title)
+    await call.bot.send_message(
+        text="type test title",
+        chat_id=call.message.chat.id,
+        reply_markup=get_created_test_cancel_addition_keyboard(skip_to_state="create_test_time")
+    )
+
+
+async def handle_cancel_addition_query(call: types.CallbackQuery, state: FSMContext):
+    state_to_go = call.data.split("#")[1]
+    if state_to_go == "create_test_save_with_additions":
+        await create_test_save_with_additions(call=call, state=state)
+        return
+
+    if state_to_go in CREATION_FORMS:
+        await state.set_state(CREATION_FORMS[state_to_go]["form"])
+
+    await call.bot.send_message(
+        text=CREATION_FORMS[state_to_go]["state_text"],
+        chat_id=call.message.chat.id,
+        reply_markup=get_created_test_cancel_addition_keyboard(
+            skip_to_state=CREATION_FORMS[state_to_go]["next_state"])
+    )
+
+
+@dp.message(Form.create_test_title)
+async def type_create_test(message: Message, state: FSMContext):
+    test_title = await Validations.validate_test_title(message=message, text=message.text)
+    if not test_title:
+        return
+
+    await state.update_data(test_title=test_title)
+    await state.set_state(Form.create_test_time)
+    await message.answer(
+        text="type test duration in minutes",
+        reply_markup=get_created_test_cancel_addition_keyboard(skip_to_state="create_test_deadline")
+    )
+
+
+@dp.message(Form.create_test_time)
+async def type_create_test(message: Message, state: FSMContext):
+    test_time = await Validations.validate_test_time(message=message, text=message.text)
+    if not test_time:
+        return
+
+    await state.update_data(test_time=int(test_time))
+    await state.set_state(Form.create_test_deadline)
+    await message.answer(
+        text="type test deadline in format 'DD.MM.YYYY hh:mm'",
+        reply_markup=get_created_test_cancel_addition_keyboard(skip_to_state="create_test_attempts_number")
+    )
+
+
+@dp.message(Form.create_test_deadline)
+async def type_create_test(message: Message, state: FSMContext):
+    timestamp = await Validations.validate_test_deadline(message=message, text=message.text)
+    if not timestamp:
+        return
+
+    await state.update_data(test_deadline_ts=timestamp)
+    await state.set_state(Form.create_test_attempts_number)
+    await message.answer(
+        text="type test number of attempts",
+        reply_markup=get_created_test_cancel_addition_keyboard(skip_to_state="create_test_save_with_additions")
+    )
+
+
+@dp.message(Form.create_test_attempts_number)
+async def type_create_test(message: Message, state: FSMContext):
+    test_attempts_number = await Validations.validate_test_attempts_number(message=message, text=message.text)
+    if not test_attempts_number:
+        return
+
+    await state.update_data(test_attempts_number=int(test_attempts_number))
+
+    # await state.set_state(Form.create_test_save_with_additions)
+    # await message.answer(
+    #     text="type test number of attempts",
+    #     reply_markup=get_created_test_cancel_addition_keyboard(skip_to_state="create_test_save_with_additions")
+    # )
+
+    await create_test_save_with_additions(message=message, state=state)
+
+
+async def create_test_save_with_additions(state: FSMContext, message: Message = None, call: types.CallbackQuery = None):
+    if message and not call:
+        user_id = message.from_user.id
+    elif not message and call:
+        user_id = call.from_user.id
+    else:
+        return
+
+    data = await state.get_data()
+    params = {
+        "test_title": "title",
+        "test_time": "time",
+        "test_deadline_ts": "deadline",
+        "test_attempts_number": "attempts_number",
+        "test_link": "link",
+    }
+    param_dict = {params[param]: data[param] for param in params.keys() if param in data}
+    param_dict["author_id"] = user_id
+    param_dict["meta_data"] = str(data["test_meta_data"])
+
+    await db_manager.add_test(**param_dict)
     await state.clear()
+
+    tests = await db_manager.get_tests_by_author_id(user_id)
+
+    if not call:
+        await message.answer(
+            text="test creation finished",
+            reply_markup=get_created_tests_keyboard(tests)
+        )
+    else:
+        await call.bot.send_message(
+            text="test creation finished",
+            chat_id=call.message.chat.id,
+            reply_markup=get_created_tests_keyboard(tests)
+        )
 
 
 async def handle_create_classroom_query(call: types.CallbackQuery) -> None:
@@ -758,7 +1028,8 @@ async def handle_authors_classrooms_query(call: types.CallbackQuery) -> None:
                                      reply_markup=get_classrooms_keyboard(authors_classrooms))
 
 
-async def handle_authors_tests_query(call: types.CallbackQuery) -> None:
+async def handle_authors_tests_query(call: types.CallbackQuery, state: FSMContext) -> None:
+    await state.clear()
     authors_tests = await db_manager.get_tests_by_author_id(call.from_user.id)
     if len(authors_tests) == 0:
         text = "you haven't created any tests yet. But u can create a new one"
