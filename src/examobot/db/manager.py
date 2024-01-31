@@ -79,26 +79,17 @@ class DBManager:
 
         return tests.scalars().all()
 
-    async def add_test(self, author_id: int, title: str, time: int, deadline: int,
-                       respondent_uri: str,
-                       attempts_number: int, link: str,
-                       meta_data: str):
-        new_test = Test(
-            uuid=str(uuid.uuid4()),
-            title=title,
-            time=time,
-            deadline=deadline,
-            attempts_number=attempts_number,
-            author_id=author_id,
-            responder_uri=respondent_uri,
-            link=link,
-            meta_data=meta_data
-        )
+    # async def add_test(self, author_id: int, title: str, time: int, deadline: int, attempts_number: int, link: str, meta_data: str):
+    async def add_test(self, **kwargs):
+        uuid_ = str(uuid.uuid4())
+        kwargs["uuid"] = uuid_
+        new_test = Test(**kwargs)
         async with self.session_maker() as session:
             session.add(new_test)
             await session.commit()
 
-        return new_test
+        test = await self.get_test_by_uuid(uuid_)
+        return test
 
     async def add_classroom(self, author_id: int, title: str):
         new_classroom = Classroom(
@@ -229,12 +220,6 @@ class DBManager:
         async with self.session_maker() as session:
             classrooms = await session.execute(query)
         return classrooms.scalars().all()
-
-    async def update_test_by_id(self, test_id: int, **kwargs):
-        query = update(Test).values(**kwargs).where(Test.id == test_id)
-        async with self.session_maker() as session:
-            await session.execute(query)
-            await session.commit()
 
 #
 # async def initial_add(self):
