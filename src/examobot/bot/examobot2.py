@@ -352,7 +352,7 @@ async def write_json_to_file(data):
 async def handle_refresh_test_data_query(call: types.CallbackQuery):
     test_id = get_test_id_or_classroom_id_from_callback(call.data)
     test = await db_manager.get_test_by_id(test_id)
-    meta_data = await FormExtractor.extract(form_url=test.link)
+    meta_data = await FormExtractor.extract_string(form_url=test.link)
     if not meta_data:
         await call.bot.edit_message_text(
             "unfortunately, I can't parse your Google form for some reason.",
@@ -726,7 +726,7 @@ async def type_edit_test(message: Message, state: FSMContext):
     await message.answer(
         "now, I'll check if form could be parsed. please make sure that your form...(some constraints)",
     )
-    meta_data = await FormExtractor.extract(form_url=message.text.strip())
+    meta_data = await FormExtractor.extract_string(form_url=message.text.strip())
     if not meta_data and "second_form_attempt" not in data:
         await message.answer(
             "unfortunately, I can't parse your Google form for some reason. "
@@ -778,7 +778,7 @@ async def type_create_test(message: Message, state: FSMContext):
     await message.answer(
         "now, I'll check if form could be parsed. please make sure that your form...(some constraints)",
     )
-    meta_data = await FormExtractor.extract(form_url=message.text.strip())
+    meta_data = await FormExtractor.extract_string(form_url=message.text.strip())
     meta_data = json.loads(meta_data)
     if not meta_data and "second_form_attempt" not in data:
         await message.answer(

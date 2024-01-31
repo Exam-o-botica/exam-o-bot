@@ -13,13 +13,18 @@ from src.examobot.definitions import GOOGLE_CLIENT_SECRETS, TOKEN_STORE, SCOPES,
 socket.setdefaulttimeout(120)
 
 
-# TODO: 2. Parse every question to message
-# TODO: 3. Send answer to GoogleForm
-
-
 class FormExtractor:
+    """
+    Class for extracting forms in JSON format using Google Forms API.
+    Basically, just use extract_...() function for extracting forms.
+    """
+
     @staticmethod
     def _login() -> Any:
+        """
+        :return: Object for interacting with Google API. Refer to the documentation for the
+            `discovery.build` function for more details on building API services in Python.
+        """
         try:
             creds = TOKEN_STORE.get()
             if not creds or creds.invalid:
@@ -40,6 +45,10 @@ class FormExtractor:
 
     @staticmethod
     def _get_form_id_from_url(url: str) -> str:
+        """
+        :param url: Responder URI link for viewing form.
+        :return: Responder form id.
+        """
         # Define a regular expression pattern to match the form ID
         pattern = r'/forms/d/([a-zA-Z0-9-_]+)'
 
@@ -53,6 +62,11 @@ class FormExtractor:
 
     @staticmethod
     def _get_json(service: Any, form_url: str) -> dict:
+        """
+        :param service: Object for interacting with Google API.
+        :param form_url: Responder URI link for viewing form.
+        :return: dict which represents the form.
+        """
         form_id = "NOT_SET"
         try:
             form_id = FormExtractor._get_form_id_from_url(form_url)
@@ -63,7 +77,11 @@ class FormExtractor:
             raise
 
     @staticmethod
-    async def extract(form_url: str) -> Optional[str]:
+    async def extract_string(form_url: str) -> Optional[str]:
+        """
+        :param form_url: Responder URI link for viewing form.
+        :return: str which represents the form.
+        """
         try:
             service = FormExtractor._login()
             res = FormExtractor._get_json(service, form_url)
@@ -72,10 +90,22 @@ class FormExtractor:
             return None
 
     @staticmethod
-    async def extract_json(form_url: str) -> Optional[dict]:
+    async def extract_dict(form_url: str) -> Optional[dict]:
+        """
+        :param form_url: Responder URI link for viewing form.
+        :return: dict which represents the form.
+        """
         try:
             service = FormExtractor._login()
             res = FormExtractor._get_json(service, form_url)
             return res
         except (errors.HttpError,):
             return None
+
+
+def main():
+    print(help(FormExtractor()))
+
+
+if __name__ == "__main__":
+    main()
