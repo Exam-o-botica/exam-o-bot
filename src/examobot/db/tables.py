@@ -86,7 +86,7 @@ class Test(Base):
     title: Mapped[str] = mapped_column(nullable=False, unique=False, index=True)
     time: Mapped[int] = mapped_column(nullable=False, default=-1)
     deadline: Mapped[int] = mapped_column(nullable=False, default=-1)
-    attempts_number: Mapped[int] = mapped_column(nullable=False, default=1)
+    attempts_number: Mapped[int] = mapped_column(nullable=False, default=-1)
     status_set_by_author: Mapped[TestStatus] = mapped_column(nullable=False, default=TestStatus.AVAILABLE)
     link: Mapped[str] = mapped_column(nullable=False)
     meta_data: Mapped[Optional[str]] = mapped_column(nullable=False, default=None)
