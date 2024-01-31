@@ -1,0 +1,275 @@
+{
+    "formId": "17ZT6LNvtkRBZa4MhDzOG0dDaYtBneB3QifVIgs89RZQ",
+    "info": {
+        "title": "Тест 1 без правильных ответов",
+        "documentTitle": "Тест 1 без правильных ответов copy"
+    },
+    "revisionId": "00000002",
+    "responderUri": "https://docs.google.com/forms/d/e/1FAIpQLSd0XFXf41-8v8p49cvAAPRi6Q3V3ujNqrtP6N5OzYTF6DnN8g/viewform",
+    "items": [
+        {
+            "itemId": "34fbeaa5",
+            "title": "Вопрос: Краткий ответ1",
+            "questionItem": {
+                "question": {
+                    "questionId": "34003897",
+                    "textQuestion": {}
+                }
+            }
+        },
+        {
+            "itemId": "2d299c41",
+            "title": "Вопрос: Краткий ответ2",
+            "questionItem": {
+                "question": {
+                    "questionId": "0ae0cecb",
+                    "textQuestion": {}
+                }
+            }
+        },
+        {
+            "itemId": "59728298",
+            "title": "Вопрос: Текст",
+            "questionItem": {
+                "question": {
+                    "questionId": "7d6d9672",
+                    "textQuestion": {
+                        "paragraph": true
+                    }
+                }
+            }
+        },
+        {
+            "itemId": "3fe02e29",
+            "title": "Вопрос: один из списка",
+            "questionItem": {
+                "question": {
+                    "questionId": "1f196c91",
+                    "choiceQuestion": {
+                        "type": "RADIO",
+                        "options": [
+                            {
+                                "value": "А"
+                            },
+                            {
+                                "value": "Б"
+                            },
+                            {
+                                "value": "В"
+                            }
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "itemId": "55362133",
+            "title": "Вопрос: несколько из списка",
+            "questionItem": {
+                "question": {
+                    "questionId": "7647aee8",
+                    "choiceQuestion": {
+                        "type": "CHECKBOX",
+                        "options": [
+                            {
+                                "value": "А"
+                            },
+                            {
+                                "value": "Б"
+                            },
+                            {
+                                "value": "В"
+                            },
+                            {
+                                "value": "Г"
+                            }
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "itemId": "1eb90ada",
+            "title": "Вопрос: один из списка + другое",
+            "questionItem": {
+                "question": {
+                    "questionId": "28d3a3b6",
+                    "choiceQuestion": {
+                        "type": "RADIO",
+                        "options": [
+                            {
+                                "value": "А"
+                            },
+                            {
+                                "value": "Б"
+                            },
+                            {
+                                "isOther": true
+                            }
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "itemId": "3360f026",
+            "title": "Вопрос: несколько из списка + другое",
+            "questionItem": {
+                "question": {
+                    "questionId": "1ab63247",
+                    "choiceQuestion": {
+                        "type": "CHECKBOX",
+                        "options": [
+                            {
+                                "value": "А"
+                            },
+                            {
+                                "value": "Б"
+                            },
+                            {
+                                "isOther": true
+                            }
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "itemId": "3982867d",
+            "title": "Вопрос: раскрывающийся список",
+            "questionItem": {
+                "question": {
+                    "questionId": "7194a94e",
+                    "choiceQuestion": {
+                        "type": "DROP_DOWN",
+                        "options": [
+                            {
+                                "value": "А"
+                            },
+                            {
+                                "value": "Б"
+                            },
+                            {
+                                "value": "В"
+                            }
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "itemId": "5d5c96d6",
+            "title": "Вопрос: шкала от 1 до 10",
+            "questionItem": {
+                "question": {
+                    "questionId": "52b946f4",
+                    "scaleQuestion": {
+                        "low": 1,
+                        "high": 10
+                    }
+                }
+            }
+        },
+        {
+            "itemId": "6724b449",
+            "title": "Вопрос: шкала от 1 до 7",
+            "questionItem": {
+                "question": {
+                    "questionId": "134cf35c",
+                    "scaleQuestion": {
+                        "low": 1,
+                        "high": 7
+                    }
+                }
+            }
+        },
+        {
+            "itemId": "6242bf1f",
+            "questionGroupItem": {
+                "questions": [
+                    {
+                        "questionId": "31d25edb",
+                        "rowQuestion": {
+                            "title": "А"
+                        }
+                    },
+                    {
+                        "questionId": "2f9d8cf1",
+                        "rowQuestion": {
+                            "title": "В"
+                        }
+                    }
+                ],
+                "grid": {
+                    "columns": {
+                        "type": "RADIO",
+                        "options": [
+                            {
+                                "value": "Б"
+                            },
+                            {
+                                "value": "Г"
+                            }
+                        ]
+                    }
+                }
+            },
+            "title": "Вопрос: сетка (множественный выбор)"
+        },
+        {
+            "itemId": "1652cda6",
+            "questionGroupItem": {
+                "questions": [
+                    {
+                        "questionId": "265918db",
+                        "rowQuestion": {
+                            "title": "А"
+                        }
+                    },
+                    {
+                        "questionId": "089104ad",
+                        "rowQuestion": {
+                            "title": "В"
+                        }
+                    }
+                ],
+                "grid": {
+                    "columns": {
+                        "type": "CHECKBOX",
+                        "options": [
+                            {
+                                "value": "Б"
+                            },
+                            {
+                                "value": "Г"
+                            }
+                        ]
+                    }
+                }
+            },
+            "title": "Вопрос: сетка флажков"
+        },
+        {
+            "itemId": "05e22928",
+            "title": "Вопрос: дата",
+            "questionItem": {
+                "question": {
+                    "questionId": "429df03f",
+                    "dateQuestion": {
+                        "includeYear": true
+                    }
+                }
+            }
+        },
+        {
+            "itemId": "5b03b098",
+            "title": "Вопрос: время",
+            "questionItem": {
+                "question": {
+                    "questionId": "144298b0",
+                    "timeQuestion": {}
+                }
+            }
+        }
+    ]
+}
