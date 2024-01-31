@@ -40,11 +40,11 @@ class FormAnswerSender:
 
     @staticmethod
     async def send_answer_data(data: dict[str, Any], answers: dict[int, str]):
-        await FormAnswerSender.send_answer_responderUri(data["responderUri"], answers)
+        await FormAnswerSender.send_answer_responder_uri(data["responderUri"], answers)
 
     @staticmethod
-    async def send_answer_responder_uri(responderUri: str, answers: dict[int, str]):
-        url = FormAnswerSender._create_send_url(responderUri, answers)
+    async def send_answer_responder_uri(responder_uri: str, answers: dict[int, str]):
+        url = FormAnswerSender._create_send_url(responder_uri, answers)
         resp = requests.get(url)
         FormAnswerSender._raise_for_status_custom_exception(resp, url)
         FormAnswerSender._determine_if_test_is_complete(resp.text)
