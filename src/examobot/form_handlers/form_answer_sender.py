@@ -9,9 +9,8 @@ from lxml import html
 
 class FormAnswerSender:
     @staticmethod
-    def _create_send_url(data: dict[str, Any], answers: dict[int, str]) -> str:
+    def _create_send_url(base_url: str, answers: dict[int, str]) -> str:
         try:
-            base_url = data["responderUri"]
             form_id = base_url.split("/")[-2]
             new_url = f'https://docs.google.com/forms/d/e/{form_id}/formResponse?&submit=Submit?&'
             for entry_id, answer in answers.items():
@@ -35,13 +34,17 @@ class FormAnswerSender:
             raise TestCompleteFailError()
 
     @staticmethod
-    async def send_answer_raw(metadata: str, answers: dict[int, str]):
+    async def send_answer_metadata(metadata: str, answers: dict[int, str]):
         data = FormAnswerSender._parse_json(metadata)
-        await FormAnswerSender.send_answer(data, answers)
+        await FormAnswerSender.send_answer_data(data, answers)
 
     @staticmethod
-    async def send_answer(data: dict[str, Any], answers: dict[int, str]):
-        url = FormAnswerSender._create_send_url(data, answers)
+    async def send_answer_data(data: dict[str, Any], answers: dict[int, str]):
+        await FormAnswerSender.send_answer_responder_uri(data["responderUri"], answers)
+
+    @staticmethod
+    async def send_answer_responder_uri(responder_uri: str, answers: dict[int, str]):
+        url = FormAnswerSender._create_send_url(responder_uri, answers)
         resp = requests.get(url)
         FormAnswerSender._raise_for_status_custom_exception(resp, url)
         FormAnswerSender._determine_if_test_is_complete(resp.text)
@@ -70,7 +73,7 @@ def correct_send(form_answer_sender, data):
         857106950: "%D0%92%D0%B0%D1%80%D0%B8%D0%B0%D0%BD%D1%82+1",
         422932123: "%D0%92%D0%B0%D1%80%D0%B8%D0%B0%D0%BD%D1%82+1"
     }
-    asyncio.run(form_answer_sender.send_answer(data, correct_answers))
+    asyncio.run(form_answer_sender.send_answer_data(data, correct_answers))
 
 
 def incorrect_send_fail(form_answer_sender, data):
@@ -82,7 +85,7 @@ def incorrect_send_fail(form_answer_sender, data):
         422932123: "%D0%92%D0%B0%D1%80%D0%B8%D0%B0%D0%BD%D1%82+1"
     }
     try:
-        asyncio.run(form_answer_sender.send_answer(data, incorrect_answers))
+        asyncio.run(form_answer_sender.send_answer_data(data, incorrect_answers))
     except TestCompleteFailError as e:
         print(e)
         print("If this error was caught then we successfully sent answers but they were in a wrong format.")
