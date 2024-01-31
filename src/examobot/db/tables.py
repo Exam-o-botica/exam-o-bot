@@ -90,7 +90,7 @@ class Test(Base):
     status_set_by_author: Mapped[TestStatus] = mapped_column(nullable=False, default=TestStatus.AVAILABLE)
     link: Mapped[str] = mapped_column(nullable=False)
     meta_data: Mapped[Optional[str]] = mapped_column(nullable=False, default=None)
-    # responder_uri: Mapped[str] = mapped_column(nullable=False)
+    responder_uri: Mapped[str] = mapped_column(nullable=False)
 
     author_id: Mapped[BigInteger] = mapped_column(ForeignKey("users.id"), nullable=False)
     author: Mapped[User] = relationship(back_populates="created_tests")  # Child

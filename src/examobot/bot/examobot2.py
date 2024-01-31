@@ -20,6 +20,7 @@ from keyboards import *
 from Entity import Entity
 from src.examobot.db.manager import DBManager
 from src.examobot.form_handlers import *
+from src.examobot.task_extractor.task_extractor import get_responder_uri
 
 # from src.main import bot, dp
 
@@ -263,7 +264,7 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
 
 
 async def write_json_to_file(data: str):  # todo delete it
-    with open('data.json', 'w') as f:
+    async with open('data.json', 'w') as f:
         print('here2')
         f.write(data)
 
@@ -279,7 +280,7 @@ async def handle_refresh_test_data_query(call: types.CallbackQuery):
             reply_markup=get_button_to_prev_menu(SPEC_CREATED_TEST, [test_id]))
         return
     await db_manager.update_test_by_id(test_id, meta_data=meta_data)
-    # await write_json_to_file(meta_data)  # todo delete id
+    # await write_json_to_file(meta_data)  # todo delete it
 
     await call.bot.edit_message_text(
         "test data was successfully updated", call.from_user.id, call.message.message_id,
@@ -791,14 +792,14 @@ async def create_test_save(message: Message, state: FSMContext):
         deadline=data["test_deadline_ts"],
         attempts_number=data["test_attempts_number"],
         link=data["test_link"],
-        # respondent_uri=json.loads(data["test_meta_data"])["responder_uri"],
+        respondent_uri=get_responder_uri(data["test_meta_data"]),
         # todo make function to get it and some other useful data
         meta_data=data["test_meta_data"],
     )
     new_test_id = new_test.id
     # todo invoke json extractor here
     print(data["test_meta_data"])
-    await message.answer(data["test_meta_data"])  # DELETE THIS
+    # await message.answer(data["test_meta_data"])  # DELETE THIS
 
     tests = await db_manager.get_tests_by_author_id(message.from_user.id)
     await message.answer(

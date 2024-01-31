@@ -48,6 +48,11 @@ def get_task_type(item: dict) -> str:
     raise ParsingError(f'cannot parse question: {item["title"]}')
 
 
+def get_responder_uri(json_string: str) -> str:
+    json_form = json.loads(json_string)
+    return json_form['responderUri']
+
+
 def extract_item(item: dict, test_id: int) -> Task:
     if 'questionItem' not in item:
         raise ParsingError(f'cannot parse question: {item["title"]}')  # todo for matrix question and maybe others
