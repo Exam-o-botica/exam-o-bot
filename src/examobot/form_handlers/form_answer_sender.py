@@ -2,7 +2,7 @@ import asyncio
 import json
 from typing import Any
 
-import exceptions
+from src.examobot.form_handlers.exceptions import *
 import requests
 from lxml import html
 
@@ -19,7 +19,7 @@ class FormAnswerSender:
                 new_url += entry_param
             return new_url
         except Exception as e:
-            raise exceptions.URLError from e
+            raise URLError from e
 
     @staticmethod
     def _determine_if_test_is_complete(html_str: str):
@@ -30,9 +30,9 @@ class FormAnswerSender:
             # Check if the page contains a form tag
             form_tags = tree.xpath('//form')
         except Exception as e:
-            raise exceptions.HTMLError(html_str) from e
+            raise HTMLError(html_str) from e
         if form_tags:
-            raise exceptions.TestCompleteFailError()
+            raise TestCompleteFailError()
 
     @staticmethod
     async def send_answer_raw(metadata: str, answers: dict[int, str]):
@@ -52,14 +52,14 @@ class FormAnswerSender:
             print(resp.status_code)
             resp.raise_for_status()
         except requests.HTTPError as e:
-            raise exceptions.HTTPError(url) from e
+            raise HTTPError(url) from e
 
     @staticmethod
     def _parse_json(metadata):
         try:
             json.loads(metadata)
         except Exception as e:
-            raise exceptions.JSONParseError(metadata) from e
+            raise JSONParseError(metadata) from e
 
 
 def correct_send(form_answer_sender, data):
@@ -83,7 +83,7 @@ def incorrect_send_fail(form_answer_sender, data):
     }
     try:
         asyncio.run(form_answer_sender.send_answer(data, incorrect_answers))
-    except (exceptions.TestCompleteFailError, exceptions.HTTPError) as e:
+    except TestCompleteFailError as e:
         print(e)
         print("If this error was caught then we successfully sent answers but they were in a wrong format.")
 
