@@ -25,7 +25,7 @@ def get_authors_buttons_():
 def get_delete_entity_confirm_keyboard(entity: Entity, entity_id: int):
     inline_keyboard = [
         [DELETE_ENTITY_CONFIRM.get_button(parameters=[entity.name, entity_id])],
-        [get_button_to_prev_menu(button=SPEC_CREATED_CLASSROOM, parameters=[entity_id], new_text='cancel')],
+        [get_button_to_prev_menu(button=SPEC_CREATED_CLASSROOM, parameters=[entity_id], new_text=CANCEL_TEXT)],
     ]
     return types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
 
@@ -85,6 +85,22 @@ def get_created_tests_keyboard(tests: list[Test]):
         *tests_list,
         [CREATE_TEST.get_button()],
         [BACK_TO_MAIN_MENU_BUTTON],
+    ]
+    return types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
+
+
+def get_created_test_additionals_keyboard():
+    inline_keyboard = [
+        [SAVE_TEST.get_button()],
+        [SAVE_TEST_WITH_ADDITIONALS.get_button()],
+        [AUTHORS_TESTS.get_button(new_text=CANCEL_TEXT)],
+    ]
+    return types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
+
+
+def get_created_test_cancel_addition_keyboard(skip_to_state: str):
+    inline_keyboard = [
+        [CANCEL_ADDITION.get_button(parameters=[skip_to_state])],
     ]
     return types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
 

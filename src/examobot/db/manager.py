@@ -79,18 +79,10 @@ class DBManager:
 
         return tests.scalars().all()
 
-    async def add_test(self, author_id: int, title: str, time: int, deadline: int, attempts_number: int, link: str,
-                       meta_data: str):
-        new_test = Test(
-            uuid=str(uuid.uuid4()),
-            title=title,
-            time=time,
-            deadline=deadline,
-            attempts_number=attempts_number,
-            author_id=author_id,
-            link=link,
-            meta_data=meta_data
-        )
+    # async def add_test(self, author_id: int, title: str, time: int, deadline: int, attempts_number: int, link: str, meta_data: str):
+    async def add_test(self, **kwargs):
+        kwargs["uuid"] = str(uuid.uuid4())
+        new_test = Test(**kwargs)
         async with self.session_maker() as session:
             session.add(new_test)
             await session.commit()

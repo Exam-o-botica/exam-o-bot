@@ -35,6 +35,7 @@ class Button:
 
 GO_TO_MAIN_MENU_TEXT = 'go to menu'
 GO_TO_PREVIOUS_MENU_TEXT = 'Back'
+CANCEL_TEXT = 'cancel'
 
 BACK_TO_MAIN_MENU = Button(name='BACK_TO_MAIN_MENU', text='back to main menu')
 
@@ -61,6 +62,12 @@ AUTHORS_TESTS = Button(name='AUTHORS_TESTS', text='created tests')
 SPEC_CREATED_TEST = Button(name='SPEC_CREATED_TEST', text='specific test')
 
 CREATE_TEST = Button(name='CREATE_TEST', text='add test')
+
+SAVE_TEST = Button(name='SAVE_TEST', text='save test')
+
+SAVE_TEST_WITH_ADDITIONALS = Button(name='SAVE_TEST_WITH_ADDITIONALS', text='add more')
+
+CANCEL_ADDITION = Button(name='CANCEL_ADDITION', text='skip')
 
 CLOSE_TEST = Button(name='CLOSE_TEST', text='close test')
 
