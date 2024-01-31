@@ -46,7 +46,7 @@ class FormExtractor:
     @staticmethod
     def _get_form_id_from_url(url: str) -> str:
         """
-        :param url: Responder URI link for viewing form.
+        :param url: Responder URI link for editing form.
         :return: Responder form id.
         """
         # Define a regular expression pattern to match the form ID
@@ -64,7 +64,7 @@ class FormExtractor:
     def _get_json(service: Any, form_url: str) -> dict:
         """
         :param service: Object for interacting with Google API.
-        :param form_url: Responder URI link for viewing form.
+        :param form_url: Responder URI link for editing form.
         :return: dict which represents the form.
         """
         form_id = "NOT_SET"
@@ -79,8 +79,8 @@ class FormExtractor:
     @staticmethod
     async def extract_string(form_url: str) -> Optional[str]:
         """
-        :param form_url: Responder URI link for viewing form.
-        :return: str which represents the form.
+        :param form_url: Responder URI link for editing form.
+        :return: JSON string which represents the form.
         """
         try:
             service = FormExtractor._login()
@@ -92,7 +92,7 @@ class FormExtractor:
     @staticmethod
     async def extract_dict(form_url: str) -> Optional[dict]:
         """
-        :param form_url: Responder URI link for viewing form.
+        :param form_url: Responder URI link for editing form.
         :return: dict which represents the form.
         """
         try:
