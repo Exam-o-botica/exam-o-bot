@@ -344,15 +344,10 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
         await handle_spec_current_classroom_query(call)
 
 
-async def write_json_to_file(data):
-    with open("test.json", "w") as f:
-        json.dump(data, f)
-
-
 async def handle_refresh_test_data_query(call: types.CallbackQuery):
     test_id = get_test_id_or_classroom_id_from_callback(call.data)
     test = await db_manager.get_test_by_id(test_id)
-    meta_data = await FormExtractor.extract(form_url=test.link)
+    meta_data = await FormExtractor.extract_string(form_url=test.link)
     if not meta_data:
         await call.bot.edit_message_text(
             "unfortunately, I can't parse your Google form for some reason.",
@@ -360,11 +355,11 @@ async def handle_refresh_test_data_query(call: types.CallbackQuery):
             reply_markup=go_to_previous_menu_keyboard(SPEC_CREATED_TEST, [test_id]))
         return
     await db_manager.update_test_by_id(test_id, meta_data=meta_data)
-    await write_json_to_file(meta_data)  # todo delete it
-
-    await call.bot.edit_message_text("test data was successfully updated",
-                                     call.from_user.id, call.message.message_id,
-                                     reply_markup=go_to_previous_menu_keyboard(SPEC_CREATED_TEST, [test_id]))
+    await call.bot.edit_message_text(
+        "test data was successfully updated",
+        call.from_user.id,
+        call.message.message_id,
+        reply_markup=go_to_previous_menu_keyboard(SPEC_CREATED_TEST, [test_id]))
 
 
 async def handle_edit_classroom_title_query(call: types.CallbackQuery, state: FSMContext) -> None:
@@ -377,9 +372,11 @@ async def handle_edit_classroom_title_query(call: types.CallbackQuery, state: FS
 async def handle_edit_classroom_query(call: types.CallbackQuery):
     classroom_id = get_test_id_or_classroom_id_from_callback(call.data)
     classroom = await db_manager.get_classroom_by_id(classroom_id)
-    await call.bot.edit_message_text(f"edit classroom \"{classroom.title}\"",
-                                     call.from_user.id, call.message.message_id,
-                                     reply_markup=get_edit_classroom_keyboard(classroom))
+    await call.bot.edit_message_text(
+        f"edit classroom \"{classroom.title}\"",
+        call.from_user.id,
+        call.message.message_id,
+        reply_markup=get_edit_classroom_keyboard(classroom))
 
 
 async def check_test_or_classroom_was_deleted_and_inform_user(entity: Test | Classroom, text,
@@ -728,7 +725,7 @@ async def type_edit_test(message: Message, state: FSMContext):
     await message.answer(
         "now, I'll check if form could be parsed. please make sure that your form...(some constraints)",
     )
-    meta_data = await FormExtractor.extract(form_url=message.text.strip())
+    meta_data = await FormExtractor.extract_string(form_url=message.text.strip())
     if not meta_data and "second_form_attempt" not in data:
         await message.answer(
             "unfortunately, I can't parse your Google form for some reason. "
@@ -780,8 +777,7 @@ async def type_create_test(message: Message, state: FSMContext):
     await message.answer(
         "now, I'll check if form could be parsed. please make sure that your form...(some constraints)",
     )
-    meta_data = await FormExtractor.extract(form_url=message.text.strip())
-    meta_data = json.loads(meta_data)
+    meta_data = await FormExtractor.extract_string(form_url=message.text.strip())
     if not meta_data and "second_form_attempt" not in data:
         await message.answer(
             "unfortunately, I can't parse your Google form for some reason. "
@@ -804,8 +800,6 @@ async def type_create_test(message: Message, state: FSMContext):
 
     await state.update_data(test_link=message.text.strip())
     await state.update_data(test_meta_data=meta_data)
-    await state.update_data(test_title=meta_data["info"]["title"])
-    await state.update_data(test_responder_uri=meta_data["responderUri"])
 
     await message.answer(
         "do you want to add additional settings for the test?",
@@ -816,11 +810,9 @@ async def type_create_test(message: Message, state: FSMContext):
 async def handle_save_test_query(call: types.CallbackQuery, state: FSMContext):
     data = await state.get_data()
     await db_manager.add_test(
-        title=data["test_title"],
         author_id=call.from_user.id,
         link=data["test_link"],
-        meta_data=str(data["test_meta_data"]),
-        responder_uri=data["test_responder_uri"],
+        meta_data=data["test_meta_data"],
     )
     # TODO Trigger form-translator
     await state.clear()
@@ -949,7 +941,7 @@ async def create_test_save_with_additions(state: FSMContext, message: Message = 
     }
     param_dict = {params[param]: data[param] for param in params.keys() if param in data}
     param_dict["author_id"] = user_id
-    param_dict["meta_data"] = str(data["test_meta_data"])
+    param_dict["meta_data"] = data["test_meta_data"]
 
     await db_manager.add_test(**param_dict)
     await state.clear()

@@ -63,7 +63,7 @@ class FormExtractor:
             raise
 
     @staticmethod
-    async def extract(form_url: str) -> Optional[str]:
+    async def extract_string(form_url: str) -> Optional[str]:
         try:
             service = FormExtractor._login()
             res = FormExtractor._get_json(service, form_url)
@@ -72,7 +72,7 @@ class FormExtractor:
             return None
 
     @staticmethod
-    async def extract_json(form_url: str) -> Optional[dict]:
+    async def extract_dict(form_url: str) -> Optional[dict]:
         try:
             service = FormExtractor._login()
             res = FormExtractor._get_json(service, form_url)
