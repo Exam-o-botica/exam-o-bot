@@ -83,8 +83,9 @@ class DBManager:
                        respondent_uri: str,
                        attempts_number: int, link: str,
                        meta_data: str):
+        uuid_ = str(uuid.uuid4())
         new_test = Test(
-            uuid=str(uuid.uuid4()),
+            uuid=uuid_,
             title=title,
             time=time,
             deadline=deadline,
@@ -97,8 +98,8 @@ class DBManager:
         async with self.session_maker() as session:
             session.add(new_test)
             await session.commit()
-
-        return new_test
+        test = await self.get_test_by_uuid(uuid_)
+        return test
 
     async def add_classroom(self, author_id: int, title: str):
         new_classroom = Classroom(
@@ -230,12 +231,13 @@ class DBManager:
             classrooms = await session.execute(query)
         return classrooms.scalars().all()
 
-    async def update_test_by_id(self, test_id: int, **kwargs):
-        query = update(Test).values(**kwargs).where(Test.id == test_id)
+    async def add_task(self, task: Task | None = None, **kwargs):
+        new_task = task if task else Task(**kwargs)
         async with self.session_maker() as session:
-            await session.execute(query)
+            session.add(new_task)
             await session.commit()
 
+        return new_task
 #
 # async def initial_add(self):
 #     async with self.session_maker() as session:

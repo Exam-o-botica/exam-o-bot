@@ -12,15 +12,14 @@ from aiogram import Dispatcher, Bot
 from aiogram.filters import CommandStart, CommandObject
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
-from aiogram.types import Message, InputFile
-from io import BytesIO
+from aiogram.types import Message
 
+from Entity import Entity
 from consts import *
 from keyboards import *
-from Entity import Entity
 from src.examobot.db.manager import DBManager
 from src.examobot.form_handlers import *
-from src.examobot.task_extractor.task_extractor import get_responder_uri
+from src.examobot.task_translator.task_extractor import Translator, TranslationError
 
 # from src.main import bot, dp
 
@@ -254,6 +253,10 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
     elif SPEC_CURRENT_TEST.has_that_callback(call.data):
         await handle_spec_current_test_query(call)
 
+    elif START_CURRENT_TEST.has_that_callback(call.data):
+        await call.bot.send_photo(call.from_user.id,
+                                  "https://lh5.googleusercontent.com/kXQTP_QST3EKSVbanucp3BA5Emi4kfb1Z1EDerm_s-fJYL-vKEsrALG0ijbVq7oUmi_EjFhdl0_FkEfv6wo8M3-9RIBNXvNfR7HlcHPty7BAj4YNnK0Uqy711boSdNdG_A")
+
     # CURRENT CLASSROOMS
 
     elif CURRENT_CLASSROOMS.has_that_callback(call.data):
@@ -264,8 +267,8 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
 
 
 async def write_json_to_file(data):
-    with open("test.json", "w") as f:
-        json.dump(data, f)
+    with open("data.json", "w") as f:
+        f.write(data)
 
 
 async def handle_refresh_test_data_query(call: types.CallbackQuery):
@@ -442,8 +445,9 @@ async def handle_share_test_link_to_classroom_query(call: types.CallbackQuery) -
 
 async def handle_share_test_link_query(call: types.CallbackQuery) -> None:
     test_id = get_test_id_or_classroom_id_from_callback(call.data)
+    test = await db_manager.get_test_by_id(test_id)
     created_classrooms = await db_manager.get_classrooms_by_author_id(call.from_user.id)
-    await call.bot.edit_message_text("choose classroom to send test",
+    await call.bot.edit_message_text(f"link: {generate_link(Entity.TEST, test.uuid)}\nchoose classroom to send test",
                                      call.from_user.id, call.message.message_id,
                                      reply_markup=get_share_test_link_to_classroom_keyboard(test_id,
                                                                                             created_classrooms))
@@ -791,13 +795,19 @@ async def create_test_save(message: Message, state: FSMContext):
         deadline=data["test_deadline_ts"],
         attempts_number=data["test_attempts_number"],
         link=data["test_link"],
-        respondent_uri=get_responder_uri(data["test_meta_data"]),
+        respondent_uri=Translator.get_responder_uri(data["test_meta_data"]),
         # todo make function to get it and some other useful data
         meta_data=data["test_meta_data"],
     )
-    new_test_id = new_test.id
-    # todo invoke json extractor here
-    print(data["test_meta_data"])
+    extractor = Translator(data["test_meta_data"], new_test.id)
+    try:
+        tasks = extractor.translate()
+        for i in tasks:
+            await db_manager.add_task(task=i)
+    except TranslationError as e:
+        await message.answer(f"<b>Error while translating task from form </b>:\n {e}", parse_mode="HTML")
+        return
+
     # await message.answer(data["test_meta_data"])  # DELETE THIS
 
     tests = await db_manager.get_tests_by_author_id(message.from_user.id)
