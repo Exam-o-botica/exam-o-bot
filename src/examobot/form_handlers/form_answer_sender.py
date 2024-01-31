@@ -17,7 +17,7 @@ class FormAnswerSender:
         """
         This function creates needed link that when accessing allows to fill the form.
         :param base_url: Responder URI link for viewing form.
-        :param answers: Dictionary where keys are numbers of question items in dec format and values are the answers.
+        :param answers: Dictionary where keys are IDs of question items in dec format and values are the answers.
         :return: URL link that will fill the form if sending request to it.
         :raises URLFailedCreationError: error that indicates that there was a problem during creating needed link.
         """
@@ -58,7 +58,7 @@ class FormAnswerSender:
         """
         Sends given `answers` to the needed form from `metadata`.
         :param metadata: Metadata of Forms in JSON string format.
-        :param answers: Dictionary where keys are numbers of question items in dec format and values are the answers.
+        :param answers: Dictionary where keys are IDs of question items in dec format and values are the answers.
         """
         data = FormAnswerSender._parse_json(metadata)
         await FormAnswerSender.send_answer_data(data, answers)
@@ -68,7 +68,7 @@ class FormAnswerSender:
         """
         Sends given `answers` to the needed form from `data`.
         :param data: Data of Forms in dictionary format.
-        :param answers: Dictionary where keys are numbers of question items in dec format and values are the answers.
+        :param answers: Dictionary where keys are IDs of question items in dec format and values are the answers.
         """
         await FormAnswerSender.send_answer_responder_uri(data["responderUri"], answers)
 
@@ -77,7 +77,7 @@ class FormAnswerSender:
         """
         Sends given `answers` to the given `responder_uri`.
         :param responder_uri: link for viewing form.
-        :param answers: Dictionary where keys are numbers of question items in dec format and values are the answers.
+        :param answers: Dictionary where keys are IDs of question items in dec format and values are the answers.
         """
         url = FormAnswerSender._create_send_url(responder_uri, answers)
         resp = requests.get(url)
