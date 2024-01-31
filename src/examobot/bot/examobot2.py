@@ -14,7 +14,6 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import Message
 
-from Entity import Entity
 from consts import *
 from keyboards import *
 from src.examobot.db.manager import DBManager
@@ -46,6 +45,15 @@ class Form(StatesGroup):
     edit_classroom_title = State()
     create_classroom_title = State()
 
+
+'''
+possible start links: 
+    1. https://t.me/beermovent_bot?start=test={test_id}
+    2. https://t.me/beermovent_bot?start=class={classroom_id}
+    
+    ex1: https://t.me/beermovent_bot?start=class=5069ut54303
+    ex2: https://t.me/beermovent_bot?start=test=50et3695
+'''
 
 CREATION_FORMS = {
     "create_test_title": {
@@ -100,7 +108,7 @@ class Validations:
         return match is not None
 
     @staticmethod
-    async def validate_test_title(message: Message, text: str) -> str | None:
+    async def validate_test_title(message: Message, text: str):
         if not re.fullmatch(ValidationPatterns.TITLE, text.strip()):
             await message.answer(text="title may contain letters, digits and spaces. please, rewrite")
             return None
@@ -108,7 +116,7 @@ class Validations:
         return text.strip()
 
     @staticmethod
-    async def validate_test_time(message: Message, text: str) -> str | None:
+    async def validate_test_time(message: Message, text: str):
         if not re.fullmatch(ValidationPatterns.TIME, text.strip()):
             await message.answer(text="duration may contain only digits. please, rewrite")
             return None
@@ -116,7 +124,7 @@ class Validations:
         return text.strip()
 
     @staticmethod
-    async def validate_test_deadline(message: Message, text: str) -> int | None:
+    async def validate_test_deadline(message: Message, text: str):
         if not re.fullmatch(ValidationPatterns.DEADLINE, text.strip()):
             await message.answer(text="please, follow the format: 'DD.MM.YYYY hh:mm'")
             return
@@ -133,7 +141,7 @@ class Validations:
         return timestamp
 
     @staticmethod
-    async def validate_test_attempts_number(message: Message, text: str) -> str | None:
+    async def validate_test_attempts_number(message: Message, text: str):
         if not re.fullmatch(ValidationPatterns.ATTEMPTS_NUMBER, text.strip()):
             await message.answer(text="number of attempts may contain only digits. please, rewrite")
             return None
@@ -312,6 +320,9 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
     elif REFRESH_TEST_DATA.has_that_callback(call.data):
         await handle_refresh_test_data_query(call)
 
+    elif DELETE_TEST.has_that_callback(call.data):
+        await handle_delete_test_query(call)
+
     # CURRENT TESTS
 
     elif CURRENT_TESTS.has_that_callback(call.data):
@@ -348,7 +359,7 @@ async def write_json_to_file(data):
 async def handle_refresh_test_data_query(call: types.CallbackQuery):
     test_id = get_test_id_or_classroom_id_from_callback(call.data)
     test = await db_manager.get_test_by_id(test_id)
-    meta_data = await FormExtractor.extract(form_url=test.link)
+    meta_data = await FormExtractor.extract_string(form_url=test.link)
     if not meta_data:
         await call.bot.edit_message_text(
             "unfortunately, I can't parse your Google form for some reason.",
@@ -356,11 +367,11 @@ async def handle_refresh_test_data_query(call: types.CallbackQuery):
             reply_markup=go_to_previous_menu_keyboard(SPEC_CREATED_TEST, [test_id]))
         return
     await db_manager.update_test_by_id(test_id, meta_data=meta_data)
-    await write_json_to_file(meta_data)  # todo delete it
-
-    await call.bot.edit_message_text("test data was successfully updated",
-                                     call.from_user.id, call.message.message_id,
-                                     reply_markup=go_to_previous_menu_keyboard(SPEC_CREATED_TEST, [test_id]))
+    await call.bot.edit_message_text(
+        "test data was successfully updated",
+        call.from_user.id,
+        call.message.message_id,
+        reply_markup=go_to_previous_menu_keyboard(SPEC_CREATED_TEST, [test_id]))
 
 
 async def handle_edit_classroom_title_query(call: types.CallbackQuery, state: FSMContext) -> None:
@@ -373,9 +384,11 @@ async def handle_edit_classroom_title_query(call: types.CallbackQuery, state: FS
 async def handle_edit_classroom_query(call: types.CallbackQuery):
     classroom_id = get_test_id_or_classroom_id_from_callback(call.data)
     classroom = await db_manager.get_classroom_by_id(classroom_id)
-    await call.bot.edit_message_text(f"edit classroom \"{classroom.title}\"",
-                                     call.from_user.id, call.message.message_id,
-                                     reply_markup=get_edit_classroom_keyboard(classroom))
+    await call.bot.edit_message_text(
+        f"edit classroom \"{classroom.title}\"",
+        call.from_user.id,
+        call.message.message_id,
+        reply_markup=get_edit_classroom_keyboard(classroom))
 
 
 async def check_test_or_classroom_was_deleted_and_inform_user(entity: Test | Classroom, text,
@@ -421,7 +434,9 @@ async def handle_change_test_status_query(call: types.CallbackQuery, new_status:
 async def handle_spec_current_classroom_query(call: types.CallbackQuery):
     classroom_id = get_test_id_or_classroom_id_from_callback(call.data)
     classroom = await db_manager.get_classroom_by_id(classroom_id)
-    if await check_test_or_classroom_was_deleted_and_inform_user(classroom, "this classroom was deleted", call):
+    if not classroom:
+        await call.bot.edit_message_text("this classroom was deleted", call.from_user.id, call.message.message_id,
+                                         reply_markup=get_go_to_main_menu_keyboard())
         return
     author = await db_manager.get_user_by_id(classroom.author_id)
 
@@ -445,13 +460,29 @@ async def handle_current_classrooms_query(call: types.CallbackQuery) -> None:
 async def handle_delete_classroom_query(call: types.CallbackQuery) -> None:
     classroom_id = get_test_id_or_classroom_id_from_callback(call.data)
     classroom = await db_manager.get_classroom_by_id(classroom_id)
-    await call.bot.edit_message_text(f"are you sure you wanna delete classroom \"{classroom.title}\"?",
-                                     call.from_user.id, call.message.message_id,
-                                     reply_markup=get_delete_entity_confirm_keyboard(Entity.CLASSROOM, classroom_id))
+    await call.bot.edit_message_text(
+        f"are you sure you wanna delete classroom \"{classroom.title}\"?",
+        call.from_user.id,
+        call.message.message_id,
+        reply_markup=get_delete_entity_confirm_keyboard(Entity.CLASSROOM, classroom_id))
 
 
 async def delete_classroom(classroom_id: int):
     await db_manager.delete_classroom(classroom_id)
+
+
+async def handle_delete_test_query(call: types.CallbackQuery) -> None:
+    test_id = get_test_id_or_classroom_id_from_callback(call.data)
+    test = await db_manager.get_test_by_id(test_id)
+    await call.bot.edit_message_text(
+        f"are you sure you wanna delete test \"{test.title}\"?",
+        call.from_user.id,
+        call.message.message_id,
+        reply_markup=get_delete_entity_confirm_keyboard(Entity.TEST, test_id))
+
+
+async def delete_test(test_id: int):
+    await db_manager.delete_test(test_id)
 
 
 async def handle_delete_entity_confirm_query(call: types.CallbackQuery) -> None:
@@ -460,7 +491,7 @@ async def handle_delete_entity_confirm_query(call: types.CallbackQuery) -> None:
     if entity == Entity.CLASSROOM.name:
         await delete_classroom(int(entity_id))
     else:
-        pass  # todo delete test
+        await delete_test(int(entity_id))
     await call.bot.edit_message_text(f"{entity} successfully deleted", call.from_user.id, call.message.message_id,
                                      reply_markup=get_go_to_main_menu_keyboard())
 
@@ -527,8 +558,8 @@ async def handle_share_test_link_query(call: types.CallbackQuery) -> None:
                                                                                             created_classrooms))
 
 
-def generate_link(type: Entity, uuid: int) -> str:
-    if type == Entity.TEST:
+def generate_link(type_: Entity, uuid: int) -> str:
+    if type_ == Entity.TEST:
         return f"https://t.me/beermovent_bot?start=test={uuid}"
     else:
         return f"https://t.me/beermovent_bot?start=class={uuid}"
@@ -557,11 +588,12 @@ async def handle_current_available_test_with_attempts_query(call: types.Callback
 
 
 def get_spec_test_info_message(test: Test) -> str:
-    msg = f"<b>Test title:</b> {test.title}\n" \
-          f"<b>Test duration:</b> {test.time} min\n" \
-          f"<b>Test deadline:</b> {test.deadline}\n" \
-          f"<b>Test attempts number:</b> {test.attempts_number}\n" \
-          f"<b>Test status:</b> {test.status_set_by_author} {get_emoji_test_status(test.status_set_by_author)}"
+    msg = f"""<b>Test title:</b> {test.title}
+    <b>Test duration:</b> {test.time} min
+    <b>Test deadline:</b> {test.deadline}
+    <b>Test attempts number:</b> {test.attempts_number}
+    <b>Test status:</b> {test.status_set_by_author} {get_emoji_test_status(test.status_set_by_author)}
+    <b>Test link:</b> {test.link}"""
     return msg
 
 
@@ -706,7 +738,7 @@ async def type_edit_test(message: Message, state: FSMContext):
     await message.answer(
         "now, I'll check if form could be parsed. please make sure that your form...(some constraints)",
     )
-    meta_data = await FormExtractor.extract(form_url=message.text.strip())
+    meta_data = await FormExtractor.extract_string(form_url=message.text.strip())
     if not meta_data and "second_form_attempt" not in data:
         await message.answer(
             "unfortunately, I can't parse your Google form for some reason. "
@@ -758,8 +790,7 @@ async def type_create_test(message: Message, state: FSMContext):
     await message.answer(
         "now, I'll check if form could be parsed. please make sure that your form...(some constraints)",
     )
-    meta_data = await FormExtractor.extract(form_url=message.text.strip())
-    meta_data = json.loads(meta_data)
+    meta_data = await FormExtractor.extract_string(form_url=message.text.strip())
     if not meta_data and "second_form_attempt" not in data:
         await message.answer(
             "unfortunately, I can't parse your Google form for some reason. "
@@ -782,8 +813,6 @@ async def type_create_test(message: Message, state: FSMContext):
 
     await state.update_data(test_link=message.text.strip())
     await state.update_data(test_meta_data=meta_data)
-    await state.update_data(test_title=meta_data["info"]["title"])
-    await state.update_data(test_responder_uri=meta_data["responderUri"])
 
     await message.answer(
         "do you want to add additional settings for the test?",
@@ -799,7 +828,10 @@ async def handle_save_test_query(call: types.CallbackQuery, state: FSMContext):
     string_json = data["test_meta_data"]
 
     responder_uri = Translator.get_responder_uri(string_json)
-    title = Translator.get_form_title(string_json) if not data['title'] else data['title']
+    if 'title' not in data or not data['title']:
+        title = Translator.get_form_title(string_json)
+    else:
+        title = data['title']
 
     tasks = await translate_to_task(string_json, call.bot)
     if not tasks:
@@ -810,7 +842,7 @@ async def handle_save_test_query(call: types.CallbackQuery, state: FSMContext):
         author_id=call.from_user.id,
         link=data["test_link"],
         meta_data=str(string_json),
-        responder_uri=responder_uri,
+        responder_uri=responder_uri
     )
 
     for task in tasks:
@@ -923,13 +955,14 @@ async def type_create_test(message: Message, state: FSMContext):
     await create_test_save_with_additions(message=message, state=state)
 
 
-async def translate_to_task(string_json: str, bot: Bot):
-    print(string_json)
+async def translate_to_task(string_json: str, call: types.CallbackQuery):
     extractor = Translator(string_json)
     try:
         tasks: list[dict] = extractor.translate()
     except TranslationError as e:
-        await bot.send_message(f"<b>Error while translating task from form </b>:\n {e}", parse_mode="HTML")
+        await call.bot.send_message(chat_id=call.from_user.id,
+                                    text=f"<b>Error while translating task from form </b>:\n {e}",
+                                    parse_mode="HTML")
         return
     return tasks
 
@@ -953,7 +986,7 @@ async def create_test_save_with_additions(state: FSMContext, message: Message = 
     }
     param_dict = {params[param]: data[param] for param in params.keys() if param in data}
     param_dict["author_id"] = user_id
-    param_dict["meta_data"] = str(data["test_meta_data"])
+    param_dict["meta_data"] = data["test_meta_data"]
 
     await state.clear()
 
@@ -962,7 +995,7 @@ async def create_test_save_with_additions(state: FSMContext, message: Message = 
     responder_uri = Translator.get_responder_uri(string_json)
     param_dict["responder_uri"] = responder_uri
 
-    if not param_dict["title"]:
+    if 'title' not in param_dict or not param_dict['title']:
         param_dict["title"] = Translator.get_form_title(string_json)
 
     tasks = await translate_to_task(string_json, call.bot)

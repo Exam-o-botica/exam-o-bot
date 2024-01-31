@@ -79,6 +79,8 @@ OPEN_TEST = Button(name='OPEN_TEST', text='open test')
 
 REFRESH_TEST_DATA = Button(name='REFRESH_TEST_DATA', text='refresh test data')
 
+DELETE_TEST = Button(name='DELETE_TEST', text='delete test')
+
 EDIT_TEST = Button(name='EDIT_TEST', text='edit test')
 
 EDIT_TEST_TITLE = Button(name='EDIT_TEST_TITLE', text='edit title')

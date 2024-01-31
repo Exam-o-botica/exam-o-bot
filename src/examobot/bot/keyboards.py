@@ -1,7 +1,7 @@
 from aiogram import types
 
 from keyboard_texts import *
-from Entity import Entity
+from entity import Entity
 from src.examobot.db.tables import *
 
 BACK_TO_MAIN_MENU_BUTTON = BACK_TO_MAIN_MENU.get_button()
@@ -26,9 +26,14 @@ def get_authors_buttons_():
 
 
 def get_delete_entity_confirm_keyboard(entity: Entity, entity_id: int):
+    if entity == Entity.TEST:
+        button = SPEC_CREATED_TEST
+    else:
+        button = SPEC_CREATED_CLASSROOM
+
     inline_keyboard = [
         [DELETE_ENTITY_CONFIRM.get_button(parameters=[entity.name, entity_id])],
-        [get_button_to_prev_menu(button=SPEC_CREATED_CLASSROOM, parameters=[entity_id], new_text=CANCEL_TEXT)],
+        [get_button_to_prev_menu(button=button, parameters=[entity_id], new_text=CANCEL_TEXT)],
     ]
     return types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
 
@@ -123,6 +128,7 @@ def get_spec_created_test_keyboard(test: Test):
         [action.get_button(parameters=[test.id])],
         [REFRESH_TEST_DATA.get_button(parameters=[test.id])],
         [EDIT_TEST.get_button(parameters=[test.id])],
+        [DELETE_TEST.get_button(parameters=[test.id])],
         [SHARE_TEST_LINK.get_button(parameters=[test.id])],
         [AUTHORS_TESTS.get_button(new_text=GO_TO_PREVIOUS_MENU_TEXT)],
     ]
