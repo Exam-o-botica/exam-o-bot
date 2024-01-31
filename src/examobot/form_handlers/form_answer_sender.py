@@ -32,7 +32,7 @@ class FormAnswerSender:
         except Exception as e:
             raise exceptions.HTMLError(html_str) from e
         if form_tags:
-            raise exceptions.SendFailError()
+            raise exceptions.TestCompleteFailError()
 
     @staticmethod
     async def send_answer_raw(metadata: str, answers: dict[int, str]):
@@ -44,7 +44,7 @@ class FormAnswerSender:
         url = FormAnswerSender._create_send_url(data, answers)
         resp = requests.get(url)
         FormAnswerSender._raise_for_status_custom_exception(resp, url)
-        # FormAnswerSender._determine_if_test_is_complete(resp.text)
+        FormAnswerSender._determine_if_test_is_complete(resp.text)
 
     @staticmethod
     def _raise_for_status_custom_exception(resp, url):
@@ -83,7 +83,7 @@ def incorrect_send_fail(form_answer_sender, data):
     }
     try:
         asyncio.run(form_answer_sender.send_answer(data, incorrect_answers))
-    except (exceptions.SendFailError, exceptions.HTTPError) as e:
+    except (exceptions.TestCompleteFailError, exceptions.HTTPError) as e:
         print(e)
         print("If this error was caught then we successfully sent answers but they were in a wrong format.")
 
