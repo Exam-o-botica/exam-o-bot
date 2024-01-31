@@ -263,10 +263,9 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
         await handle_spec_current_classroom_query(call)
 
 
-async def write_json_to_file(data: str):  # todo delete it
-    async with open('data.json', 'w') as f:
-        print('here2')
-        f.write(data)
+async def write_json_to_file(data):
+    with open("test.json", "w") as f:
+        json.dump(data, f)
 
 
 async def handle_refresh_test_data_query(call: types.CallbackQuery):
@@ -277,14 +276,14 @@ async def handle_refresh_test_data_query(call: types.CallbackQuery):
         await call.bot.edit_message_text(
             "unfortunately, I can't parse your Google form for some reason.",
             call.from_user.id, call.message.message_id,
-            reply_markup=get_button_to_prev_menu(SPEC_CREATED_TEST, [test_id]))
+            reply_markup=go_to_previous_menu_keyboard(SPEC_CREATED_TEST, [test_id]))
         return
     await db_manager.update_test_by_id(test_id, meta_data=meta_data)
-    # await write_json_to_file(meta_data)  # todo delete it
+    await write_json_to_file(meta_data)  # todo delete it
 
-    await call.bot.edit_message_text(
-        "test data was successfully updated", call.from_user.id, call.message.message_id,
-        reply_markup=get_button_to_prev_menu(SPEC_CREATED_TEST, [test_id]))
+    await call.bot.edit_message_text("test data was successfully updated",
+                                     call.from_user.id, call.message.message_id,
+                                     reply_markup=go_to_previous_menu_keyboard(SPEC_CREATED_TEST, [test_id]))
 
 
 async def handle_edit_classroom_title_query(call: types.CallbackQuery, state: FSMContext) -> None:
