@@ -12,14 +12,12 @@ from aiogram import Dispatcher, Bot
 from aiogram.filters import CommandStart, CommandObject
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
-from aiogram.types import Message, InputFile
-from io import BytesIO
+from aiogram.types import Message
 
 from consts import *
 from keyboards import *
 from src.examobot.db.manager import DBManager
 from src.examobot.form_handlers import *
-from src.examobot.task_extractor.task_extractor import get_responder_uri
 
 TOKEN = os.getenv("EXAM_O_BOT_TOKEN")
 dp = Dispatcher()
@@ -740,71 +738,6 @@ async def handle_create_test_query(call: types.CallbackQuery, state: FSMContext)
         call.from_user.id,
         call.message.message_id,
     )
-    await state.set_state(Form.create_test_title)
-
-
-@dp.message(Form.create_test_title)
-async def type_create_test(message: Message, state: FSMContext):
-    if not re.fullmatch(ValidationPatterns.TITLE, message.text.strip()):
-        await message.answer(text="title may contain letters, digits and spaces. please, rewrite")
-        return
-
-    await state.update_data(test_title=message.text.strip())
-    await state.set_state(Form.create_test_time)
-    await message.answer(text="type test duration in minutes")
-
-
-@dp.message(Form.create_classroom_title)
-async def type_create_classroom(message: Message, state: FSMContext):
-    if not re.fullmatch(ValidationPatterns.TITLE, message.text.strip()):
-        await message.answer(text="title may contain letters, digits and spaces. please, rewrite")
-        return
-
-    await state.clear()
-    await db_manager.add_classroom(title=message.text.strip(), author_id=message.from_user.id)
-    await message.bot.send_message(text=f"classroom \"{message.text.strip()}\" created", chat_id=message.from_user.id)
-    await message.bot.send_message(text=MAIN_MENU_TEXT, chat_id=message.from_user.id,
-                                   reply_markup=get_main_menu_keyboard())
-
-
-@dp.message(Form.create_test_time)
-async def type_create_test(message: Message, state: FSMContext):
-    if not re.fullmatch(ValidationPatterns.TIME, message.text.strip()):
-        await message.answer(text="duration may contain only digits. please, rewrite")
-        return
-
-    await state.update_data(test_time=int(message.text.strip()))
-    await state.set_state(Form.create_test_deadline)
-    await message.answer(text="type test deadline in format 'DD.MM.YYYY hh:mm'")
-
-
-@dp.message(Form.create_test_deadline)
-async def type_create_test(message: Message, state: FSMContext):
-    if not re.fullmatch(ValidationPatterns.DEADLINE, message.text.strip()):
-        await message.answer(text="please, follow the format: 'DD.MM.YYYY hh:mm'")
-        return
-
-    try:
-        timestamp = int(
-            time.mktime(
-                datetime.strptime(message.text.strip(), "%d.%m.%Y %H:%M").timetuple()))
-    except Exception as e:
-        pprint(f"Deadline error: {e}")
-        await message.answer(text="seems like there is some error with the date. please, retry")
-        return
-
-    await state.update_data(test_deadline_ts=timestamp)
-    await state.set_state(Form.create_test_attempts_number)
-    await message.answer(text="type test number of attempts")
-
-
-@dp.message(Form.create_test_attempts_number)
-async def type_create_test(message: Message, state: FSMContext):
-    if not re.fullmatch(ValidationPatterns.ATTEMPTS_NUMBER, message.text.strip()):
-        await message.answer(text="number of attempts may contain only digits. please, rewrite")
-        return
-
-    await state.update_data(test_attempts_number=int(message.text.strip()))
     await state.set_state(Form.create_test_link)
 
 
@@ -852,20 +785,12 @@ async def type_create_test(message: Message, state: FSMContext):
 
 async def handle_save_test_query(call: types.CallbackQuery, state: FSMContext):
     data = await state.get_data()
-    new_test = await db_manager.add_test(
+    await db_manager.add_test(
         title=data["test_title"],
         author_id=call.from_user.id,
         link=data["test_link"],
         meta_data=str(data["test_meta_data"]),
-        respondent_uri=get_responder_uri(data["test_meta_data"]),
     )
-
-    new_test_id = new_test.id
-    # todo invoke json extractor here
-    print(data["test_meta_data"])
-    # await message.answer(data["test_meta_data"])  # DELETE THIS
-
-
     # TODO Trigger form-translator
     await state.clear()
     tests = await db_manager.get_tests_by_author_id(call.from_user.id)
@@ -914,6 +839,19 @@ async def type_create_test(message: Message, state: FSMContext):
         text="type test duration in minutes",
         reply_markup=get_created_test_cancel_addition_keyboard(skip_to_state="create_test_deadline")
     )
+
+
+@dp.message(Form.create_classroom_title)
+async def type_create_classroom(message: Message, state: FSMContext):
+    if not re.fullmatch(ValidationPatterns.TITLE, message.text.strip()):
+        await message.answer(text="title may contain letters, digits and spaces. please, rewrite")
+        return
+
+    await state.clear()
+    await db_manager.add_classroom(title=message.text.strip(), author_id=message.from_user.id)
+    await message.bot.send_message(text=f"classroom \"{message.text.strip()}\" created", chat_id=message.from_user.id)
+    await message.bot.send_message(text=MAIN_MENU_TEXT, chat_id=message.from_user.id,
+                                   reply_markup=get_main_menu_keyboard())
 
 
 @dp.message(Form.create_test_time)
@@ -997,6 +935,7 @@ async def create_test_save_with_additions(state: FSMContext, message: Message = 
             chat_id=call.message.chat.id,
             reply_markup=get_created_tests_keyboard(tests)
         )
+
 
 
 async def handle_create_classroom_query(call: types.CallbackQuery, state: FSMContext) -> None:
