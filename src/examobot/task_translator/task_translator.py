@@ -1,6 +1,5 @@
 import json
 
-from src.examobot.db.tables import Task
 from src.examobot.task_translator.questions_classes import QuestionType
 
 
@@ -10,27 +9,32 @@ class TranslationError(Exception):
 
 
 class Translator:
-    def __init__(self, json_string: str, test_id: int) -> None:
+    def __init__(self, json_string: str) -> None:
         self._json_string = json_string
-        self._test_id = test_id
 
     @staticmethod
     def get_responder_uri(json_string: str) -> str:
         json_form = json.loads(json_string)
         return json_form['responderUri']
 
-    def translate(self) -> list[Task]:
+    @staticmethod
+    def get_form_title(json_string: str) -> str:
+        json_form = json.loads(json_string)
+        return json_form['info']['title']
+
+    def translate(self) -> list[dict]:
         my_json: dict = json.loads(self._json_string)
-        tasks: list[Task] = []
+        tasks: list[dict] = []
         for pair in enumerate(my_json['items']):
             tasks.append(self._translate_item(*pair))
         return tasks
 
-    def _translate_item(self, ind: int, item: dict) -> Task:
+    def _translate_item(self, ind: int, item: dict) -> dict:
         if 'title' not in item:
             raise TranslationError(f'question №{ind}: cannot parse question without title')
         if 'questionItem' not in item:
-            raise TranslationError(f'question №{ind} - <i>{item["title"]}</i>: cannot parse that type of questions')  # todo for matrix question and maybe others
+            raise TranslationError(
+                f'question №{ind} - <i>{item["title"]}</i>: cannot parse that type of questions')  # todo for matrix question and maybe others
 
         google_form_question_id = self._get_google_form_question_id(item)
         text = self._get_text(item)
@@ -38,9 +42,8 @@ class Translator:
         required = self._get_required(item)
         input_media = self._get_input_media(item)
         task_type = self._get_task_type(item)
-        test_id = self._test_id
-        return Task(google_form_question_id=google_form_question_id, text=text, description=description,
-                    required=required, input_media=input_media, task_type=task_type, test_id=test_id)
+        return {"google_form_question_id": google_form_question_id, "text": text, "description": description,
+                "required": required, "input_media": input_media, "task_type": task_type}
 
     @staticmethod
     def _get_google_form_question_id(item: dict) -> str:

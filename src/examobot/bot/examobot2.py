@@ -19,7 +19,7 @@ from consts import *
 from keyboards import *
 from src.examobot.db.manager import DBManager
 from src.examobot.form_handlers import *
-from src.examobot.task_translator.task_extractor import Translator, TranslationError
+from src.examobot.task_translator.task_translator import Translator, TranslationError
 
 # from src.main import bot, dp
 
@@ -785,32 +785,6 @@ async def type_create_test(message: Message, state: FSMContext):
     await state.update_data(test_title=meta_data["info"]["title"])
     await state.update_data(test_responder_uri=meta_data["responderUri"])
 
-
-async def create_test_save(message: Message, state: FSMContext):
-    data = await state.get_data()
-    new_test = await db_manager.add_test(
-        title=data["test_title"],
-        author_id=message.from_user.id,
-        time=data["test_time"],
-        deadline=data["test_deadline_ts"],
-        attempts_number=data["test_attempts_number"],
-        link=data["test_link"],
-        respondent_uri=Translator.get_responder_uri(data["test_meta_data"]),
-        # todo make function to get it and some other useful data
-        meta_data=data["test_meta_data"],
-    )
-    extractor = Translator(data["test_meta_data"], new_test.id)
-    try:
-        tasks = extractor.translate()
-        for i in tasks:
-            await db_manager.add_task(task=i)
-    except TranslationError as e:
-        await message.answer(f"<b>Error while translating task from form </b>:\n {e}", parse_mode="HTML")
-        return
-
-    # await message.answer(data["test_meta_data"])  # DELETE THIS
-
-    tests = await db_manager.get_tests_by_author_id(message.from_user.id)
     await message.answer(
         "do you want to add additional settings for the test?",
         reply_markup=get_created_test_additionals_keyboard()
@@ -819,16 +793,34 @@ async def create_test_save(message: Message, state: FSMContext):
 
 async def handle_save_test_query(call: types.CallbackQuery, state: FSMContext):
     data = await state.get_data()
-    await db_manager.add_test(
-        title=data["test_title"],
+
+    await state.clear()
+
+    string_json = data["test_meta_data"]
+
+    responder_uri = Translator.get_responder_uri(string_json)
+    if "title" in data:
+        title = data["title"]
+    else:
+        title = Translator.get_form_title(string_json)
+
+    tasks = await translate_to_task(string_json, call.bot)
+    if not tasks:
+        return
+
+    new_test = await db_manager.add_test(
+        title=title,
         author_id=call.from_user.id,
         link=data["test_link"],
-        meta_data=str(data["test_meta_data"]),
-        responder_uri=data["test_responder_uri"],
+        meta_data=str(string_json),
+        responder_uri=responder_uri,
     )
-    # TODO Trigger form-translator
-    await state.clear()
+
+    for task in tasks:
+        await db_manager.add_task(**task, test_id=new_test.id)
+
     tests = await db_manager.get_tests_by_author_id(call.from_user.id)
+
     await call.bot.send_message(
         text="test is saved",
         chat_id=call.message.chat.id,
@@ -934,6 +926,17 @@ async def type_create_test(message: Message, state: FSMContext):
     await create_test_save_with_additions(message=message, state=state)
 
 
+async def translate_to_task(string_json: str, bot: Bot):
+    print(string_json)
+    extractor = Translator(string_json)
+    try:
+        tasks: list[dict] = extractor.translate()
+    except TranslationError as e:
+        await bot.send_message(f"<b>Error while translating task from form </b>:\n {e}", parse_mode="HTML")
+        return
+    return tasks
+
+
 async def create_test_save_with_additions(state: FSMContext, message: Message = None, call: types.CallbackQuery = None):
     if message and not call:
         user_id = message.from_user.id
@@ -955,7 +958,26 @@ async def create_test_save_with_additions(state: FSMContext, message: Message = 
     param_dict["author_id"] = user_id
     param_dict["meta_data"] = str(data["test_meta_data"])
 
-    await db_manager.add_test(**param_dict)
+    await state.clear()
+
+    string_json = data["test_meta_data"]
+
+    responder_uri = Translator.get_responder_uri(string_json)
+    title = Translator.get_form_title(string_json)
+
+    param_dict["responder_uri"] = responder_uri
+    if "title" not in param_dict:
+        param_dict["title"] = title
+
+    tasks = await translate_to_task(string_json, call.bot)
+    if not tasks:
+        return
+
+    new_test = await db_manager.add_test(**param_dict)
+
+    for task in tasks:
+        await db_manager.add_task(**task, test_id=new_test.id)
+
     await state.clear()
 
     tests = await db_manager.get_tests_by_author_id(user_id)
