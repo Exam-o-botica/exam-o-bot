@@ -104,7 +104,17 @@ class FormExtractor:
 
 
 def main():
-    print(help(FormExtractor()))
+    form_url = "https://docs.google.com/forms/d/1YSEgy19CzMalinchIuOIQ1mUmPGPy5nFOY54IQxaRYk/edit"
+    try:
+        service = FormExtractor._login()
+        res = FormExtractor._get_json(service, form_url)
+        final = json.dumps(res, ensure_ascii=False, indent=4)
+    except (errors.HttpError,):
+        final = None
+
+    print(final)
+
+    # print(help(FormExtractor()))
 
 
 if __name__ == "__main__":
