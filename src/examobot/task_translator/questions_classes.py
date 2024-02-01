@@ -3,6 +3,7 @@ import enum
 from abc import ABC, abstractmethod
 
 from aiogram import types, Bot
+from aiogram.types import Message
 
 from src.examobot.db.manager import db_manager
 from src.examobot.task_translator.task_keyboards import *
@@ -25,7 +26,7 @@ class Question(ABC):
         return msg
 
     @abstractmethod
-    async def send_question(self, bot: Bot, user_id: int) -> None:
+    async def send_question(self, bot: Bot, user_id: int) -> list[Message]:
         pass
 
     @staticmethod
@@ -60,12 +61,16 @@ class StringOrTextQuestion(Question):
 
     async def send_question(self, bot: Bot, user_id: int):
         # todo we need to put a flag in db with current test id and current task id
-        if not self.task.input_media:
-            await bot.send_message(chat_id=user_id, text=self.task.text)
-            return
-        await bot.send_photo(chat_id=user_id,
-                             photo=str(self.task.input_media),  # todo maybe incorrect media type
-                             caption=str(self.task.text))
+        msg_to_del = []
+        if self.task.input_media:
+            msg1 = await bot.send_photo(chat_id=user_id,
+                                        photo=str(self.task.input_media))
+            msg_to_del.append(msg1)
+
+        msg2 = await bot.send_message(chat_id=user_id, text=self.task.text,
+                                      reply_markup=get_no_options_keyboard(self.task))
+        msg_to_del.append(msg2)
+        return msg_to_del
 
     @staticmethod
     def validate_answer(message: types.Message):
@@ -90,7 +95,7 @@ class OneChoiceQuestion(Question):
     def __init__(self, task: Task) -> None:
         super().__init__(task)
 
-    async def send_question(self, bot: Bot, user_id: int) -> None:
+    async def send_question(self, bot: Bot, user_id: int) -> list[Message]:
         options = self.task.options
         if not options:
             raise AssertionError("Expected answer options in this type of questions")
@@ -102,15 +107,17 @@ class OneChoiceQuestion(Question):
         else:
             chosen_variant = int(answer.answer_data[0])
 
-        if not self.task.input_media:
-            await bot.send_message(chat_id=user_id, text=text,
-                                   reply_markup=get_one_choice_keyboard(self.task.id, len(options), chosen_variant))
-            return
+        task = await db_manager.get_task_by_id(self.task.id)
+        msg_to_del = []
+        if self.task.input_media:
+            msg1 = await bot.send_photo(chat_id=user_id,
+                                        photo=str(self.task.input_media)),  # todo maybe incorrect media type
+            msg_to_del.append(msg1)
 
-        await bot.send_photo(chat_id=user_id,
-                             photo=str(self.task.input_media),  # todo maybe incorrect media type
-                             caption=str(text),
-                             reply_markup=get_one_choice_keyboard(self.task.id, len(options), chosen_variant))
+        msg2 = await bot.send_message(chat_id=user_id, text=text,
+                                      reply_markup=get_one_choice_keyboard(task, len(options), chosen_variant))
+        msg_to_del.append(msg2)
+        return msg_to_del
 
     @staticmethod
     def validate_answer(message: types.Message | None) -> bool:
@@ -135,7 +142,7 @@ class MultipleChoiceQuestion(Question):
     def __init__(self, task: Task) -> None:
         super().__init__(task)
 
-    async def send_question(self, bot: Bot, user_id: int) -> None:
+    async def send_question(self, bot: Bot, user_id: int) -> list[Message]:
         options = self.task.options
         if not options:
             raise AssertionError(
@@ -150,20 +157,21 @@ class MultipleChoiceQuestion(Question):
             chosen_options = [int(option) for option in answer_data]
             # chosen_options = ast.literal_eval(answer_data)
 
-        if not self.task.input_media:
-            await bot.send_message(
+        msg_to_del = []
+        if self.task.input_media:
+            msg1 = await bot.send_photo(
                 chat_id=user_id,
-                text=text,
-                reply_markup=get_multiple_choice_keyboard(self.task.id, len(options), chosen_options)
+                photo=str(self.task.input_media)
             )
-            return
+            msg_to_del.append(msg1)
 
-        await bot.send_photo(
+        msg2 = await bot.send_message(
             chat_id=user_id,
-            photo=str(self.task.input_media),  # todo maybe incorrect media type
-            caption=str(self.task.answer_data),
-            reply_markup=get_multiple_choice_keyboard(self.task.id, len(options), chosen_options)
+            text=text,
+            reply_markup=get_multiple_choice_keyboard(self.task, len(options), chosen_options)
         )
+        msg_to_del.append(msg2)
+        return msg_to_del
 
     def validate_answer(self, message: types.Message | None) -> bool:
         return True

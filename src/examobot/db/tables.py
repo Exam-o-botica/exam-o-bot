@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import List, Optional
 
-from sqlalchemy import ForeignKey, Column, LargeBinary, BigInteger, ARRAY, String
+from sqlalchemy import ForeignKey, Column, LargeBinary, BigInteger, ARRAY, String, Integer
 from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped
@@ -55,6 +55,7 @@ class User(Base):
 
     current_test_id: Mapped[int] = mapped_column(ForeignKey("tests.id"), nullable=True, default=None)
     current_task_id: Mapped[int] = mapped_column(ForeignKey("tasks.id"), nullable=True, default=None)
+    current_messages_to_delete: Column[ARRAY[int]] = Column(ARRAY(Integer), nullable=True, default=None)
 
     created_classrooms: Mapped[List["Classroom"]] = relationship(
         back_populates="author",  # todo maybe we need uselist=True here, maybe not, who knows
