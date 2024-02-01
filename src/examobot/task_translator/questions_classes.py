@@ -1,8 +1,11 @@
+import ast
 import enum
 from abc import ABC, abstractmethod
 
 from aiogram import types, Bot
 
+from examobot.bot import db_manager
+from examobot.task_translator.task_keyboards import *
 from src.examobot.db.tables import Task, Answer, AnswerStatus
 from src.examobot.task_translator.task_keyboards import get_one_choice_keyboard
 from src.examobot.bot import db_manager
@@ -126,6 +129,58 @@ class OneChoiceQuestion(Question):
                       status=AnswerStatus.CHOSEN,
                       task_id=task_id,
                       user_id=user_ans.from_user.id)
+
+    def convert_answer_to_string_repr(self, answer: Answer) -> str:
+        pass
+
+
+class MultipleChoiceQuestion(Question):
+    def __init__(self, task: Task) -> None:
+        super().__init__(task)
+
+    async def send_question(self, bot: Bot, user_id: int) -> None:
+        options = self.task.options
+        if not options:
+            raise AssertionError(
+                "Expected answer options in this type of questions").add_note(f"For user {user_id}")
+
+        text = await self.get_options_text(options)
+
+        chosen_options = []
+        answer: Answer = db_manager.get_answer_by_task_id_and_user_id(self.task.id, user_id)
+        if answer.status == AnswerStatus.CHOSEN:
+            answer_data = answer.answer_data
+            chosen_options = [int(option) for option in answer_data]
+            # chosen_options = ast.literal_eval(answer_data)
+
+        if not self.task.input_media:
+            await bot.send_message(
+                chat_id=user_id,
+                text=text,
+                reply_markup=get_multiple_choice_keyboard(self.task.id, len(options), chosen_options)
+            )
+            return
+
+        await bot.send_photo(
+            chat_id=user_id,
+            photo=str(self.task.input_media),  # todo maybe incorrect media type
+            caption=str(self.task.answer_data),
+            reply_markup=get_multiple_choice_keyboard(self.task.id, len(options), chosen_options)
+        )
+
+    def validate_answer(self, message: types.Message | None) -> bool:
+        return True
+
+    def get_answer(self, user_ans: types.CallbackQuery) -> Answer:
+        if not user_ans.isinstance(types.CallbackQuery):
+            raise AssertionError(f"user_ans expected as types.CallbackQuery, found: {type(user_ans)}")
+
+        new_chosen_option = user_ans.data.split("#")[2]
+        answer: Answer = db_manager.get_answer_by_task_id_and_user_id(
+            self.task.id, user_id=user_ans.from_user.id)
+
+        answer.answer_data.append(new_chosen_option)
+        return answer
 
     def convert_answer_to_string_repr(self, answer: Answer) -> str:
         pass
