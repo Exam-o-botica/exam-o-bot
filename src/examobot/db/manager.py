@@ -236,6 +236,9 @@ class DBManager:
 
         return new_task
 
+
+    # ANSWERS
+
     async def get_answer_by_task_id_and_user_id(self, task_id: int, user_id: int):
         query = select(Answer).where(and_(Answer.user_id == user_id,
                                           Answer.task_id == task_id))

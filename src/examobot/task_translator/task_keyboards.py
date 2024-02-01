@@ -1,6 +1,7 @@
 from aiogram.types import InlineKeyboardMarkup
 
 from examobot.task_translator.keyboard_task_texts import *
+from aiogram import types
 
 
 def make_pinned_option_text(order_number: int, chosen_options: list[int]) -> str:
@@ -12,12 +13,12 @@ def make_pinned_option_text(order_number: int, chosen_options: list[int]) -> str
     return text
 
 
-def get_one_choice_keyboard(task_id: int, options_num: int):
+def get_one_choice_keyboard(task_id: int, options_num: int, chosen_answer: int | None = None):
     inline_keyboard = [
-        [ONE_CHOICE_QUESTION_OPTION.get_button(new_text=f"вариант {i}", parameters=[task_id, i]) for i in
+        [ONE_CHOICE_QUESTION_OPTION.get_button(new_text=f"вариант {i}{' 📌' if i == chosen_answer else ''}", parameters=[task_id, i]) for i in
          range(1, options_num + 1)]
     ]
-    return InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
+    return types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
 
 
 def get_multiple_choice_keyboard(task_id: int, options_num: int, chosen_options: list[int]):

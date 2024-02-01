@@ -7,6 +7,8 @@ from aiogram import types, Bot
 from examobot.bot import db_manager
 from examobot.task_translator.task_keyboards import *
 from src.examobot.db.tables import Task, Answer, AnswerStatus
+from src.examobot.task_translator.task_keyboards import get_one_choice_keyboard
+from src.examobot.bot import db_manager
 
 
 class QuestionType(enum.Enum):
@@ -29,15 +31,17 @@ class Question(ABC):
     async def send_question(self, bot: Bot, user_id: int) -> None:
         pass
 
+    @staticmethod
     @abstractmethod
-    def validate_answer(self, message: types.Message | None) -> bool:
+    def validate_answer(message: types.Message | None) -> bool:
         """
         we wanna validate messages only with text
         """
         pass
 
+    @staticmethod
     @abstractmethod
-    def get_answer(self, user_ans: types.Message | types.CallbackQuery) -> Answer:
+    def get_answer(user_ans: types.Message | types.CallbackQuery, task_id: int) -> Answer:
         """
         convert user answer message or callback from user to Answer table object
         """
@@ -66,7 +70,8 @@ class StringOrTextQuestion(Question):
                              photo=str(self.task.input_media),  # todo maybe incorrect media type
                              caption=str(self.task.text))
 
-    def validate_answer(self, message: types.Message):
+    @staticmethod
+    def validate_answer(message: types.Message):
         # todo invoke this function after user sent a message, user has current
         #  test id and current task id flags in db and the type of current task is STRING_OR_TEXT
         if not message.text:
@@ -78,9 +83,10 @@ class StringOrTextQuestion(Question):
         pass
         # todo
 
-    def get_answer(self, message: types.Message) -> Answer:
-        return Answer(text=message.text, status=AnswerStatus.UNCHECKED,
-                      task_id=self.task.id, user_id=message.from_user.id)
+    @staticmethod
+    def get_answer(message: types.Message, task_id) -> Answer:
+        return Answer(answer_data=[message.text], status=AnswerStatus.UNCHECKED,
+                      task_id=task_id, user_id=message.from_user.id)
 
 
 class OneChoiceQuestion(Question):
@@ -93,17 +99,36 @@ class OneChoiceQuestion(Question):
             raise AssertionError("Expected answer options in this type of questions")
 
         text = self.get_options_text(options)
+        answer = await db_manager.get_answer_by_task_id_and_user_id(self.task.id, user_id)
+        if answer.status == AnswerStatus.UNCHECKED:
+            chosen_variant = -1
+        else:
+            chosen_variant = int(answer.answer_data[0])
 
         if not self.task.input_media:
             await bot.send_message(chat_id=user_id, text=text,
-                                   reply_markup=get_one_choice_keyboard(self.task.id, len(options)))
+                                   reply_markup=get_one_choice_keyboard(self.task.id, len(options), chosen_variant))
+            return
 
-    def validate_answer(self, message: types.Message | None) -> bool:
+        await bot.send_photo(chat_id=user_id,
+                             photo=str(self.task.input_media),  # todo maybe incorrect media type
+                             caption=str(text),
+                             reply_markup=get_one_choice_keyboard(self.task.id, len(options), chosen_variant))
+
+    @staticmethod
+    def validate_answer(message: types.Message | None) -> bool:
         return True
 
-    def get_answer(self, user_ans: types.CallbackQuery) -> Answer:
+    @staticmethod
+    def get_answer(user_ans: types.CallbackQuery, task_id: int) -> Answer:
         if not user_ans.isinstance(types.CallbackQuery):
             raise AssertionError(f"user_ans expected as types.CallbackQuery, found: {type(user_ans)}")
+
+        user_chosen_variant = user_ans.data.split('#')[-1]
+        return Answer(answer_data=[user_chosen_variant],
+                      status=AnswerStatus.CHOSEN,
+                      task_id=task_id,
+                      user_id=user_ans.from_user.id)
 
     def convert_answer_to_string_repr(self, answer: Answer) -> str:
         pass
