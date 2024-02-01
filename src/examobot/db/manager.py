@@ -5,7 +5,7 @@ from sqlalchemy import select, and_, or_, update
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncEngine
 
 from src.examobot.db.tables import Test, Task, User, Classroom, Base, UserClassroomParticipation, \
-    UserTestParticipation, UserTestParticipationStatus, TestStatus
+    UserTestParticipation, UserTestParticipationStatus, TestStatus, Answer
 
 DATABASE_URI = 'sqlite+aiosqlite:///mydatabase.db'
 
@@ -235,6 +235,17 @@ class DBManager:
             await session.commit()
 
         return new_task
+
+    # ANSWERS
+
+    async def get_answer_by_task_id_and_user_id(self, task_id: int, user_id: int):
+        query = select(Answer).where(and_(Answer.user_id == user_id,
+                                          Answer.task_id == task_id))
+
+        async with self.session_maker() as session:
+            result = await session.execute(query)
+            answer = result.scalars().first()
+            return answer
 #
 # async def initial_add(self):
 #     async with self.session_maker() as session:
