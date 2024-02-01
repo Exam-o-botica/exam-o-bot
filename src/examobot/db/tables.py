@@ -21,8 +21,8 @@ class TestStatus(Enum):
 
 class AnswerStatus(Enum):
     UNCHECKED = 0
-    CORRECT = 1
-    INCORRECT = 2
+    CHOSEN = 1
+    SENT = 2
 
 
 class UserTestParticipationStatus(Enum):
@@ -141,7 +141,7 @@ class Answer(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     # uuid: Mapped[str] = mapped_column(index=True, autoincrement=False)
 
-    text: Mapped[Optional[str]] = mapped_column(nullable=True, default=None)
+    answer_data: Mapped[List[str]] = mapped_column(nullable=True, default=None)
     status: Mapped[AnswerStatus] = mapped_column(nullable=False, default=AnswerStatus.UNCHECKED)
 
     task_id: Mapped[int] = mapped_column(ForeignKey("tasks.id"))  # Child
