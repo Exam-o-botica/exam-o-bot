@@ -53,13 +53,16 @@ class User(Base):
 
     answers: Mapped[List["Answer"]] = relationship(back_populates="user", cascade="all,delete")  # Parent
 
+    current_test_id: Mapped[int] = mapped_column(ForeignKey("tests.id"), nullable=True, default=None)
+    current_task_id: Mapped[int] = mapped_column(ForeignKey("tasks.id"), nullable=True, default=None)
+
     created_classrooms: Mapped[List["Classroom"]] = relationship(
         back_populates="author",  # todo maybe we need uselist=True here, maybe not, who knows
         cascade="all,delete")  # Parent
 
-    created_tests: Mapped[List["Test"]] = relationship(
-        back_populates="author",
-        cascade="all,delete")  # Parent
+    # created_tests: Mapped[List["Test"]] = relationship(
+    #     back_populates="author",
+    #     cascade="all,delete")  # Parent
 
 
 class Classroom(Base):
@@ -94,7 +97,7 @@ class Test(Base):
     responder_uri: Mapped[str] = mapped_column(nullable=True, default=None)
 
     author_id: Mapped[BigInteger] = mapped_column(ForeignKey("users.id"), nullable=False)
-    author: Mapped[User] = relationship(back_populates="created_tests")  # Child
+    # author: Mapped[User] = relationship(back_populates="created_tests")  # Child
 
     tasks: Mapped[List["Task"]] = relationship(back_populates="test", cascade="all,delete")  # Parent
     classroom_test_connections: Mapped[List["ClassroomTestConnection"]] = (
@@ -126,6 +129,7 @@ class Task(Base):
     # images = Column(LargeBinary, nullable=True, default=None)
     # score: Mapped[int] = mapped_column(nullable=False, default=0)
     options: Column[ARRAY[str]] = Column(ARRAY(String), nullable=True, default=None)
+    is_other: Mapped[bool] = mapped_column(nullable=False, default=False)
     task_type: Mapped[str] = mapped_column(nullable=False)
     # meta_data: Mapped[Optional[str]] = mapped_column(nullable=True, default=None)
 
