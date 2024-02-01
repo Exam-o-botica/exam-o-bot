@@ -96,15 +96,17 @@ class ValidationPatterns:
     LINK = re.compile(r"(http(s)?://)?docs\.google\.com/forms/d/[_a-zA-Z\d-]+/edit")
 
     @staticmethod
-    def SHARE_LINK(link_type: str):
+    def SHARE_LINK():
         return re.compile(
-            f'{link_type}=[a-f0-9]{8}-?[a-f0-9]{4}-?4[a-f0-9]{3}-?[89ab][a-f0-9]{3}-?[a-f0-9]{12}\Z', re.I)
+            r'[a-f0-9]{8}-?[a-f0-9]{4}-?4[a-f0-9]{3}-?[89ab][a-f0-9]{3}-?[a-f0-9]{12}', re.I)
 
 
 class Validations:
     @staticmethod
     def is_valid_share_link(link: str, link_type: str) -> bool:
-        match = re.fullmatch(ValidationPatterns.SHARE_LINK(link_type), link.strip())
+        if link.startswith(link_type):
+            link = link.removeprefix(link_type + '=')
+        match = re.match(ValidationPatterns.SHARE_LINK(), link.strip())
         return match is not None
 
     @staticmethod
@@ -166,6 +168,7 @@ async def welcome_message(message: types.Message, command: CommandObject) -> Non
             reply_markup=get_main_menu_keyboard())
 
     else:
+        print("AAAARGS:", args)
         if Validations.is_valid_share_link(args, "class"):
             classroom_uuid = args.split("=")[1]
             classroom = await db_manager.get_classroom_by_uuid(classroom_uuid)
@@ -575,10 +578,11 @@ async def handle_share_test_link_query(call: types.CallbackQuery) -> None:
 
 
 def generate_link(type_: Entity, uuid: int) -> str:
+    bot_name = os.getenv('BOT_NAME')
     if type_ == Entity.TEST:
-        return f"https://t.me/beermovent_bot?start=test={uuid}"
+        return f"https://t.me/{bot_name}?start=test={uuid}"
     else:
-        return f"https://t.me/beermovent_bot?start=class={uuid}"
+        return f"https://t.me/{bot_name}?start=class={uuid}"
 
 
 async def handle_current_ended_or_with_no_attempts_tests_query(call: types.CallbackQuery) -> None:
