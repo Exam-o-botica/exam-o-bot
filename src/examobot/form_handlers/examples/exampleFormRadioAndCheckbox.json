@@ -1,0 +1,135 @@
+{
+    "formId": "1YSEgy19CzMalinchIuOIQ1mUmPGPy5nFOY54IQxaRYk",
+    "info": {
+        "title": "Одинарный и множественный выбор",
+        "description": "Как это доставать?",
+        "documentTitle": "Одинарный и множественный выбор"
+    },
+    "revisionId": "0000003e",
+    "responderUri": "https://docs.google.com/forms/d/e/1FAIpQLScGjoCol0PHb8gPqBNQNPjXrtXqfx52To7w_oXAOODWZ_vyeA/viewform",
+    "items": [
+        {
+            "itemId": "7a58114c",
+            "title": "Обязательный одинарный выбор без пункта \"Другое\"",
+            "questionItem": {
+                "question": {
+                    "questionId": "59f8f04d",
+                    "required": true,
+                    "choiceQuestion": {
+                        "type": "RADIO",
+                        "options": [
+                            {
+                                "value": "А"
+                            },
+                            {
+                                "value": "Б"
+                            },
+                            {
+                                "value": "В"
+                            }
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "itemId": "5acb8336",
+            "title": "Одинарный выбор без пункта \"Другое\"",
+            "questionItem": {
+                "question": {
+                    "questionId": "5586227a",
+                    "choiceQuestion": {
+                        "type": "RADIO",
+                        "options": [
+                            {
+                                "value": "А"
+                            },
+                            {
+                                "value": "Б"
+                            },
+                            {
+                                "value": "В"
+                            }
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "itemId": "20e565f8",
+            "title": "Одинарный выбор с пунктом \"Другое\"",
+            "questionItem": {
+                "question": {
+                    "questionId": "3ddb4f97",
+                    "choiceQuestion": {
+                        "type": "RADIO",
+                        "options": [
+                            {
+                                "value": "А"
+                            },
+                            {
+                                "value": "Б"
+                            },
+                            {
+                                "value": "В"
+                            },
+                            {
+                                "isOther": true
+                            }
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "itemId": "59269f95",
+            "title": "Обязательный множественный выбор с пунктом \"Другое\"",
+            "questionItem": {
+                "question": {
+                    "questionId": "404c3ec9",
+                    "required": true,
+                    "choiceQuestion": {
+                        "type": "CHECKBOX",
+                        "options": [
+                            {
+                                "value": "А"
+                            },
+                            {
+                                "value": "Б"
+                            },
+                            {
+                                "value": "В"
+                            },
+                            {
+                                "isOther": true
+                            }
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "itemId": "0d9da082",
+            "title": "Множественный выбор с пунктом \"Другое\"",
+            "questionItem": {
+                "question": {
+                    "questionId": "71cfcaba",
+                    "choiceQuestion": {
+                        "type": "CHECKBOX",
+                        "options": [
+                            {
+                                "value": "А"
+                            },
+                            {
+                                "value": "Б"
+                            },
+                            {
+                                "value": "В"
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    ]
+}

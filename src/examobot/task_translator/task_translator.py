@@ -22,6 +22,14 @@ class Translator:
         json_form = json.loads(json_string)
         return json_form['info']['title']
 
+    @staticmethod
+    def may_have_options(task_type_name: str):
+        types_that_may_have = {
+            QuestionType.ONE_CHOICE.name,
+            QuestionType.MULTIPLE_CHOICE.name,
+        }
+        return task_type_name in types_that_may_have
+
     def translate(self) -> list[dict]:
         my_json: dict = json.loads(self._json_string)
         tasks: list[dict] = []
@@ -36,14 +44,22 @@ class Translator:
             raise TranslationError(
                 f'question №{ind} - <i>{item["title"]}</i>: cannot parse that type of questions')  # todo for matrix question and maybe others
 
-        google_form_question_id = self._get_google_form_question_id(item)
-        text = self._get_text(item)
-        description = self._get_description(item)
-        required = self._get_required(item)
-        input_media = self._get_input_media(item)
-        task_type = self._get_task_type(item)
-        return {"google_form_question_id": google_form_question_id, "text": text, "description": description,
-                "required": required, "input_media": input_media, "task_type": task_type}
+        translated = {
+            "google_form_question_id": self._get_google_form_question_id(item),
+            "text": self._get_text(item),
+            "description": self._get_description(item),
+            "required": self._get_required(item),
+            "input_media": self._get_input_media(item),
+            "task_type": self._get_task_type(item),
+        }
+
+        if Translator.may_have_options(translated["task_type"]):
+            options, is_other = self._get_options_and_is_other(item)
+            if options:
+                translated["options"] = options
+                translated["is_other"] = is_other
+
+        return translated
 
     @staticmethod
     def _get_google_form_question_id(item: dict) -> str:
@@ -81,5 +97,35 @@ class Translator:
         if 'textQuestion' in item['questionItem']['question']:
             return QuestionType.STRING_OR_TEXT.name
 
+        elif 'choiceQuestion' in item['questionItem']['question']:
+            try:
+                type_ = item['questionItem']['question']['type']
+            except KeyError as e:
+                raise TranslationError(f'cannot parse question: {item["title"]}')
+
+            if type_ == "RADIO":
+                return QuestionType.ONE_CHOICE.name
+            elif type_ == "CHECKBOX":
+                return QuestionType.MULTIPLE_CHOICE.name
+
         # todo add other types here
         raise TranslationError(f'cannot parse question: {item["title"]}')
+
+    @staticmethod
+    def _get_options_and_is_other(item: dict):
+        try:
+            options_dict = item['questionItem']['question']['choiceQuestion']['options']
+            options = []
+            is_other = False
+            for value_dict in options_dict:
+                if "value" in value_dict:
+                    options.append(value_dict["value"])
+                elif "isOther" in value_dict:
+                    is_other = True
+                else:
+                    raise TranslationError(f'cannot parse question: {item["title"]}')
+
+            return options, is_other
+
+        except KeyError:
+            return None, False
