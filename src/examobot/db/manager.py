@@ -215,11 +215,17 @@ class DBManager:
         return tests.scalars().all()
 
     async def get_tasks_by_test_id(self, test_id: int):
-        query = select(Task).where(Task.test_id == test_id).order_by(Task.order_id)
+        query = select(Task).where(Task.test_id == test_id).order_by(Task.id)  # todo mb order
         async with self.session_maker() as session:
             tasks = await session.execute(query)
 
         return tasks.scalars().all()
+
+    async def get_task_by_id(self, task_id: int):
+        query = select(Task).where(Task.id == task_id)
+        async with self.session_maker() as session:
+            task = await session.execute(query)
+        return task.scalars().first()
 
     async def get_current_classrooms_by_user_id(self, user_id: int):
         query = (
@@ -237,6 +243,8 @@ class DBManager:
 
         return new_task
 
+    # TASK
+
     # ANSWERS
 
     async def get_answer_by_task_id_and_user_id(self, task_id: int, user_id: int):
@@ -247,199 +255,6 @@ class DBManager:
             result = await session.execute(query)
             answer = result.scalars().first()
             return answer
-#
-# async def initial_add(self):
-#     async with self.session_maker() as session:
-#         student_role = Role(
-#             id=1,
-#             role_title=RoleTitles.STUDENT
-#         )
-#         user1 = User(
-#             tg_id=1,
-#             first_name="F",
-#             second_name="A",
-#             last_name="V",
-#             grade_first_number=1,
-#             grade_second_number=2,
-#         )
-#         user1.roles.append(student_role)
-#         student_role.user = user1
-#
-#         author_role = Role(
-#             id=2,
-#             role_title=RoleTitles.STUDENT
-#         )
-#         user2 = User(
-#             tg_id=2,
-#             first_name="A",
-#             second_name="K",
-#             last_name="P",
-#             grade_first_number=1,
-#             grade_second_number=3,
-#         )
-#         user2.roles.append(author_role)
-#         author_role.user = user2
-#
-#         classroom = Classroom(
-#             id=1,
-#             password="1234",
-#             author_id=2
-#         )
-#         classroom.participants.append(user1)
-#         classroom.participants.append(user2)
-#
-#         test1 = Test(
-#             id=1,
-#             title="A test",
-#             time=120,
-#             attempts_number=3,
-#             author=user2,
-#             classroom=classroom
-#         )
-#         task1 = Task(
-#             id=1,
-#             order_id=1,
-#             title="a",
-#             text="Do it!",
-#             right_answer="Done",
-#             test=test1
-#         )
-#         task2 = Task(
-#             id=2,
-#             order_id=2,
-#             title="b",
-#             text="Do it!",
-#             right_answer="Done!",
-#             test=test1
-#         )
-#         test1.tasks.append(task1)
-#         test1.tasks.append(task2)
-#
-#         test2 = Test(
-#             id=2,
-#             title="B test",
-#             time=60,
-#             attempts_number=1,
-#             author=user2,
-#             classroom=classroom
-#         )
-#         task3 = Task(
-#             id=3,
-#             order_id=1,
-#             title="c",
-#             text="Do it!",
-#             right_answer="Done!",
-#             test=test2
-#         )
-#         test2.tasks.append(task3)
-#
-#         session.add(student_role)
-#         session.add(author_role)
-#         session.add(user1)
-#         session.add(user2)
-#
-#         session.add(classroom)
-#
-#         session.add(test1)
-#         session.add(test2)
-#         session.add(task1)
-#         session.add(task2)
-#         session.add(task3)
-#
-#         await session.flush()
-#         await session.commit()
-#
-#         # stmt = insert(TestParticipation).values(user_tg_id=tg_id, test_id=test_id, score=score)
-#         # await session.execute(stmt)
 
-# async def initial_add(self):
-#     async with self.session_maker() as session:
-#         user1 = User(
-#             role=Role.STUDENT,
-#             tg_id=1,
-#             first_name="F",
-#             second_name="A",
-#             last_name="V",
-#             grade_first_number=1,
-#             grade_second_number=2,
-#         )
-#
-#         user2 = User(
-#             role=Role.STUDENT,
-#             tg_id=2,
-#             first_name="A",
-#             second_name="K",
-#             last_name="P",
-#             grade_first_number=1,
-#             grade_second_number=3,
-#         )
-#
-#         classroom = Classroom(
-#             id=1,
-#             password="1234",
-#             author_id=2
-#         )
-#         classroom.participants.append(user1)
-#         classroom.participants.append(user2)
-#
-#         test1 = Test(
-#             id=1,
-#             title="A test",
-#             time=120,
-#             attempts_number=3,
-#             author=user2,
-#             classroom=classroom
-#         )
-#         task1 = Task(
-#             id=1,
-#             order_id=1,
-#             title="a",
-#             text="Do it!",
-#             right_answer="Done",
-#             test=test1
-#         )
-#         task2 = Task(
-#             id=2,
-#             order_id=2,
-#             title="b",
-#             text="Do it!",
-#             right_answer="Done!",
-#             test=test1
-#         )
-#         test1.tasks.append(task1)
-#         test1.tasks.append(task2)
-#
-#         test2 = Test(
-#             id=2,
-#             title="B test",
-#             time=60,
-#             attempts_number=1,
-#             author=user2,
-#             classroom=classroom
-#         )
-#         task3 = Task(
-#             id=3,
-#             order_id=1,
-#             title="c",
-#             text="Do it!",
-#             right_answer="Done!",
-#             test=test2
-#         )
-#         test2.tasks.append(task3)
-#
-#         session.add(user1)
-#         session.add(user2)
-#
-#         session.add(classroom)
-#
-#         session.add(test1)
-#         session.add(test2)
-#         session.add(task1)
-#         session.add(task2)
-#         session.add(task3)
-#
-#         await session.flush()
-#         await session.commit()
 
-# stmt = insert(TestParticipation).values(user_tg_id=tg_id, test_id=test_id, score=score)
-# await session.execute(stmt)
+db_manager = DBManager()

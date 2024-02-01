@@ -16,15 +16,21 @@ from aiogram.types import Message
 
 from consts import *
 from keyboards import *
-from src.examobot.db.manager import DBManager
-from src.examobot.form_handlers import *
+# from src.examobot.db.manager import db_manager
+from src.examobot.task_translator.QuestionType import QuestionType
+# from src.examobot.task_translator.QuestionType import QuestionType
+
+from src.examobot.task_translator.questions_classes import *
 from src.examobot.task_translator.task_translator import Translator, TranslationError
+from src.examobot.form_handlers import *
+from src.examobot.db.tables import *
+from src.examobot.bot.entity import Entity
 
 # from src.main import bot, dp
 
 TOKEN = os.getenv("EXAM_O_BOT_TOKEN")
 dp = Dispatcher()
-db_manager = DBManager()
+# db_manager = DBManager()
 
 
 class Form(StatesGroup):
@@ -358,8 +364,12 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
         await handle_spec_current_test_query(call)
 
     elif START_CURRENT_TEST.has_that_callback(call.data):
-        await call.bot.send_photo(call.from_user.id,
-                                  "https://lh5.googleusercontent.com/kXQTP_QST3EKSVbanucp3BA5Emi4kfb1Z1EDerm_s-fJYL-vKEsrALG0ijbVq7oUmi_EjFhdl0_FkEfv6wo8M3-9RIBNXvNfR7HlcHPty7BAj4YNnK0Uqy711boSdNdG_A")
+        await handle_start_current_test_query(call)
+
+    elif SPEC_CURRENT_TEST_TASK.has_that_callback(call.data):
+        await handle_spec_current_test_task_query(call)
+
+
 
     # CURRENT CLASSROOMS
 
@@ -368,6 +378,44 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
 
     elif SPEC_CURRENT_CLASSROOM.has_that_callback(call.data):
         await handle_spec_current_classroom_query(call)
+
+
+async def handle_spec_current_test_task_query(call: types.CallbackQuery):
+    task_id = get_test_id_or_classroom_id_from_callback(call.data)
+    task = await db_manager.get_task_by_id(task_id)
+    if not task:
+        await call.bot.edit_message_text("this test was deleted by author",
+                                         call.from_user.id,
+                                         call.message.message_id,
+                                         reply_markup=get_go_to_main_menu_keyboard())
+        return
+
+    # await call.bot.delete_message(call.from_user.id, call.message.message_id)
+
+    question = QuestionType[task.task_type].value(task)
+    await question.send_question(call.bot, call.from_user.id)
+
+    # await call.bot.edit_message_text(f"task title: {task.title}\n"
+    #                                  f"task text: {task.text}\n"
+    #                                  f"task options: {task.options}\n"
+    #                                  f"task input media: {task.input_media}\n",
+    #                                  call.from_user.id, call.message.message_id,
+    #                                  reply_markup=get_spec_current_test_task_keyboard(task))
+
+
+async def handle_start_current_test_query(call: types.CallbackQuery):
+    test_id = get_test_id_or_classroom_id_from_callback(call.data)
+    test = await db_manager.get_test_by_id(test_id)
+    tasks: list[Task] = await db_manager.get_tasks_by_test_id(test_id)
+    # todo check if user has no attempts left
+    # todo check deadline test
+    # todo add start timer
+    await call.bot.edit_message_text(
+        test.title,
+        call.from_user.id,
+        call.message.message_id,
+        reply_markup=get_current_test_tasks_keyboard(tasks)
+    )
 
 
 async def write_json_to_file(data):
@@ -853,7 +901,7 @@ async def handle_save_test_query(call: types.CallbackQuery, state: FSMContext):
     else:
         title = data['title']
 
-    tasks = await translate_to_task(string_json, call.bot)
+    tasks = await translate_to_task(string_json, call)
     if not tasks:
         return
 
@@ -1018,7 +1066,7 @@ async def create_test_save_with_additions(state: FSMContext, message: Message = 
     if 'title' not in param_dict or not param_dict['title']:
         param_dict["title"] = Translator.get_form_title(string_json)
 
-    tasks = await translate_to_task(string_json, call.bot)
+    tasks = await translate_to_task(string_json, call)
     if not tasks:
         return
 
