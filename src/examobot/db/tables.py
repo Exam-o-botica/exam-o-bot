@@ -125,6 +125,7 @@ class Task(Base):
     # correct_answer: Mapped[Optional[str]] = mapped_column(nullable=True, default=None)
     # images = Column(LargeBinary, nullable=True, default=None)
     # score: Mapped[int] = mapped_column(nullable=False, default=0)
+    options: Mapped[List[str]] = mapped_column(nullable=True, default=None)
     task_type: Mapped[str] = mapped_column(nullable=False)
     # meta_data: Mapped[Optional[str]] = mapped_column(nullable=True, default=None)
 
