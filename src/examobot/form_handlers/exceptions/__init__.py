@@ -1,2 +1,2 @@
-from .form_answer_sender_exceptions import (FormAnswerSenderException, HTTPError, JSONParseError,
-                                            URLError, HTMLError, TestCompleteFailError)
+from .form_answer_sender_exceptions import (FormAnswerSenderException, BadRequestError, JSONParseError,
+                                            URLFailedCreationError, HTMLParseError, TestCompleteFailError)
