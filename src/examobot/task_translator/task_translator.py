@@ -1,6 +1,6 @@
 import json
 
-from src.examobot.task_translator.questions_classes import QuestionType
+from src.examobot.task_translator.QuestionType import QuestionType
 
 
 class TranslationError(Exception):

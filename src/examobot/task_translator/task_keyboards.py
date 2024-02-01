@@ -1,6 +1,6 @@
 from aiogram.types import InlineKeyboardMarkup
 
-from examobot.task_translator.keyboard_task_texts import *
+from src.examobot.task_translator.keyboard_task_texts import *
 from aiogram import types
 
 

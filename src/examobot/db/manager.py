@@ -1,4 +1,5 @@
 import asyncio
+import os
 import uuid
 
 from sqlalchemy import select, and_, or_, update
@@ -7,7 +8,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 from src.examobot.db.tables import Test, Task, User, Classroom, Base, UserClassroomParticipation, \
     UserTestParticipation, UserTestParticipationStatus, TestStatus, Answer
 
-DATABASE_URI = 'sqlite+aiosqlite:///mydatabase.db'
+DATABASE_URI = os.getenv("DATABASE_URI")
 
 
 class EngineManager:
@@ -235,7 +236,6 @@ class DBManager:
             await session.commit()
 
         return new_task
-
 
     # ANSWERS
 

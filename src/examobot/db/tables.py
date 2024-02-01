@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import List, Optional
 
-from sqlalchemy import ForeignKey, Column, LargeBinary, BigInteger
+from sqlalchemy import ForeignKey, Column, LargeBinary, BigInteger, ARRAY, String
 from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped
@@ -125,7 +125,7 @@ class Task(Base):
     # correct_answer: Mapped[Optional[str]] = mapped_column(nullable=True, default=None)
     # images = Column(LargeBinary, nullable=True, default=None)
     # score: Mapped[int] = mapped_column(nullable=False, default=0)
-    options: Mapped[List[str]] = mapped_column(nullable=True, default=None)
+    options: Column[ARRAY[str]] = Column(ARRAY(String), nullable=True, default=None)
     task_type: Mapped[str] = mapped_column(nullable=False)
     # meta_data: Mapped[Optional[str]] = mapped_column(nullable=True, default=None)
 
@@ -141,7 +141,7 @@ class Answer(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     # uuid: Mapped[str] = mapped_column(index=True, autoincrement=False)
 
-    answer_data: Mapped[List[str]] = mapped_column(nullable=True, default=None)
+    answer_data: Column[ARRAY[str]] = Column(ARRAY(String), nullable=True, default=None)
     status: Mapped[AnswerStatus] = mapped_column(nullable=False, default=AnswerStatus.UNCHECKED)
 
     task_id: Mapped[int] = mapped_column(ForeignKey("tasks.id"))  # Child

@@ -4,15 +4,10 @@ from abc import ABC, abstractmethod
 
 from aiogram import types, Bot
 
-from examobot.bot import db_manager
-from examobot.task_translator.task_keyboards import *
+from src.examobot.task_translator.task_keyboards import *
 from src.examobot.db.tables import Task, Answer, AnswerStatus
 from src.examobot.task_translator.task_keyboards import get_one_choice_keyboard
 from src.examobot.bot import db_manager
-
-
-class QuestionType(enum.Enum):
-    STRING_OR_TEXT = enum.auto()
 
 
 class Question(ABC):
