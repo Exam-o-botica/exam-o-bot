@@ -159,59 +159,75 @@ async def welcome_message(message: types.Message, command: CommandObject) -> Non
         await db_manager.add_user(message.from_user.id, message.from_user.username, name=name)
         await message.bot.send_message(message.from_user.id, START_TEXT)
 
-    if args:
+    if not args:
+        await message.bot.send_message(
+            message.from_user.id,
+            MAIN_MENU_TEXT,
+            reply_markup=get_main_menu_keyboard())
+
+    else:
         if Validations.is_valid_share_link(args, "class"):
             classroom_uuid = args.split("=")[1]
             classroom = await db_manager.get_classroom_by_uuid(classroom_uuid)
-
             if not classroom:
-                await message.bot.send_message(message.from_user.id, "this classroom doesn't exist",
-                                               reply_markup=get_go_to_main_menu_keyboard())
+                await message.bot.send_message(
+                    message.from_user.id,
+                    text="this classroom doesn't exist",
+                    reply_markup=get_go_to_main_menu_keyboard())
+
                 return
 
-            if await db_manager.check_if_user_in_classroom(classroom.id,
-                                                           message.from_user.id):  # todo maybe we wanna consider that user is not author of this classroom
-                await message.bot.send_message(message.from_user.id, "you are already joined this classroom",
-                                               reply_markup=get_go_to_main_menu_keyboard())
+            if await db_manager.check_if_user_in_classroom(classroom.id, message.from_user.id):
+                # todo maybe we wanna consider that user is not author of this classroom
+                await message.bot.send_message(
+                    message.from_user.id,
+                    text="you are already joined this classroom",
+                    reply_markup=get_go_to_main_menu_keyboard())
+
                 return
 
-            await db_manager.add_user_to_classroom(classroom.id,
-                                                   message.from_user.id)
+            await db_manager.add_user_to_classroom(classroom.id, message.from_user.id)
+            await message.bot.send_message(
+                message.from_user.id,
+                SUCCESSFULLY_ADDED_TO_CLASSROOM.format(classroom.title),
+                reply_markup=get_go_to_main_menu_keyboard())
 
-            await message.bot.send_message(message.from_user.id,
-                                           SUCCESSFULLY_ADDED_TO_CLASSROOM.format(classroom.title),
-                                           reply_markup=get_go_to_main_menu_keyboard())
-
-            await send_message_to_user(message.bot, classroom.author_id,
-                                       f"user @{message.from_user.username} joined your classroom \"{classroom.title}\"")
+            await send_message_to_user(
+                message.bot,
+                classroom.author_id,
+                message=f"user @{message.from_user.username} joined your classroom \"{classroom.title}\"")
 
         elif Validations.is_valid_share_link(args, "test"):
             test_uuid = args.split("=")[1]
             test = await db_manager.get_test_by_uuid(test_uuid)
             if not test:
-                await message.bot.send_message(message.from_user.id, "link is invalid, test doesn't exist",
-                                               reply_markup=get_go_to_main_menu_keyboard())
+                await message.bot.send_message(
+                    message.from_user.id,
+                    text="link is invalid, test doesn't exist",
+                    reply_markup=get_go_to_main_menu_keyboard())
+
                 return
 
-            if await db_manager.check_if_user_in_test(test.id,
-                                                      message.from_user.id):  # todo maybe we wanna consider that user is not author of this test
-                await message.bot.send_message(message.from_user.id, "you are already able to pass this test",
-                                               reply_markup=get_go_to_main_menu_keyboard())
+            if await db_manager.check_if_user_in_test(test.id, message.from_user.id):
+                # todo maybe we wanna consider that user is not author of this test
+                await message.bot.send_message(
+                    message.from_user.id,
+                    text="you are already able to pass this test",
+                    reply_markup=get_go_to_main_menu_keyboard())
+
                 return
 
             await db_manager.add_user_to_test_participants(test.id, message.from_user.id)
-
-            await message.bot.send_message(message.from_user.id,
-                                           SUCCESSFULLY_ADDED_TO_TESTS.format(test.title),
-                                           reply_markup=get_go_to_main_menu_keyboard())
+            await message.bot.send_message(
+                message.from_user.id,
+                SUCCESSFULLY_ADDED_TO_TESTS.format(test.title),
+                reply_markup=get_go_to_main_menu_keyboard())
 
         else:
-            await message.bot.send_message(message.from_user.id, "link is invalid",
-                                           reply_markup=get_go_to_main_menu_keyboard())
-
-    else:
-        await message.bot.send_message(message.from_user.id, MAIN_MENU_TEXT,
-                                       reply_markup=get_main_menu_keyboard())
+            await message.bot.send_message(
+                message.from_user.id,
+                text="link is invalid",
+                reply_markup=get_go_to_main_menu_keyboard())
 
 
 def get_user_name(user: types.User) -> str:
