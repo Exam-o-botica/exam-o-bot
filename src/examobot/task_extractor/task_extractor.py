@@ -64,14 +64,27 @@ def extract_item(item: dict, test_id: int) -> Task:
     input_media = get_input_media(item)
     task_type = get_task_type(item)
     test_id = test_id
-    return Task(google_form_question_id=google_form_question_id, text=text, description=description,
-                required=required, input_media=input_media, task_type=task_type, test_id=test_id)
+    return Task(
+        google_form_question_id=google_form_question_id,
+        text=text,
+        description=description,
+        required=required,
+        input_media=input_media,
+        task_type=task_type,
+        test_id=test_id
+    )
 
 
-def extract(json_string: str, test_id: int):
+def extract(json_string: str, test_id: int) -> None:
+    """
+    Casts JSON of an extracted form to the DB representation of tasks and saves them into the DB.
+    :param json_string: JSON-representation of a form.
+    :param test_id: ID of the test corresponding to the form.
+    :return:
+    """
     my_json: dict = json.loads(json_string)
-    tasks = []
-    for i in my_json:
-        tasks.append(extract_item(i, test_id))
+    tasks = [
+        extract_item(json_item, test_id) for json_item in my_json
+    ]
 
     # todo add all tasks to db here if all tasks were correctly parsed
