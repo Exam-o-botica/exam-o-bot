@@ -245,13 +245,3 @@ def go_to_previous_menu_keyboard(button: Button, parameters=None):
         [button.get_button(parameters=parameters, new_text=GO_TO_PREVIOUS_MENU_TEXT)],
     ]
     return types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
-
-
-# TESTS PASSING
-
-def get_task_options_keyboard(task_id: int, options_num: int):
-    inline_keyboard = [
-        [ONE_CHOICE_QUESTION_OPTION.get_button(new_text=f"вариант {i}", parameters=[task_id]) for i in
-         range(1, options_num + 1)]
-    ]
-    return types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)

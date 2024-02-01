@@ -101,7 +101,7 @@ class OneChoiceQuestion(Question):
 
     def get_answer(self, user_ans: types.CallbackQuery) -> None:
         if not user_ans.isinstance(types.CallbackQuery):
-            raise AssertionError("Expected answer options in this type of questions")
+            raise AssertionError(f"user_ans expected as types.CallbackQuery, found: {type(user_ans)}")
 
     def convert_answer_to_string_repr(self, answer: Answer) -> str:
         pass
