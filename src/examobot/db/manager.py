@@ -202,6 +202,12 @@ class DBManager:
             await session.execute(query)
             await session.commit()
 
+    async def update_answer_by_id(self, answer_id: int, **kwargs):
+        query = update(Answer).values(**kwargs).where(Answer.id == answer_id)
+        async with self.session_maker() as session:
+            await session.execute(query)
+            await session.commit()
+
     # CURRENT TESTS
 
     async def get_current_ended_or_with_no_attempts_tests_by_user_id(self, user_id: int):

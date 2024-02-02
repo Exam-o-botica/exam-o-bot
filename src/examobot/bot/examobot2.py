@@ -973,9 +973,10 @@ async def handle_save_test_query(call: types.CallbackQuery, state: FSMContext):
 
     tests = await db_manager.get_tests_by_author_id(call.from_user.id)
 
-    await call.bot.send_message(
+    await call.bot.edit_message_text(
         text="test is saved",
         chat_id=call.message.chat.id,
+        message_id=call.message.message_id,
         reply_markup=get_created_tests_keyboard(tests)
     )
 
@@ -1222,8 +1223,7 @@ async def handle_message(message: types.Message):
 
         await db_manager.update_user_by_id(message.from_user.id, current_messages_to_delete=[])
 
-    answer = question.get_answer(message, task.id)
-    await db_manager.add_answer(answer)
+    await question.save_answer(message, task.id)
     await db_manager.update_user_by_id(message.from_user.id, current_task_id=None)
 
     test = await db_manager.get_test_by_id(cur_test_id)

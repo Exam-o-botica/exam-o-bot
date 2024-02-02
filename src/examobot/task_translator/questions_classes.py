@@ -1,13 +1,12 @@
-import ast
-import enum
 from abc import ABC, abstractmethod
+from typing import Any, Callable
 
-from aiogram import types, Bot
-from aiogram.types import Message
+from aiogram import Bot
+from aiogram.types import Message, CallbackQuery
 
 from src.examobot.db.manager import db_manager
+from src.examobot.db.tables import Answer, AnswerStatus
 from src.examobot.task_translator.task_keyboards import *
-from src.examobot.db.tables import Task, Answer, AnswerStatus
 
 
 # from src.examobot.bot import db_manager
@@ -26,8 +25,34 @@ class Question(ABC):
         return msg
 
     @staticmethod
+    async def check_answer_and_save(
+            values_to_replace: dict[str, Any],
+            user_id: int,
+            task_id: int,
+            answer_data_converter: Callable[[list[str]], list[str]] = None
+    ) -> None:
+        existing_answer = await db_manager.get_answer_by_task_id_and_user_id(
+            task_id=task_id,
+            user_id=user_id
+        )
+
+        if answer_data_converter:
+            values_to_replace["answer_data"] = answer_data_converter(existing_answer.answer_data)
+
+        if not existing_answer:
+            answer = Answer(**values_to_replace, task_id=task_id, user_id=user_id)
+            await db_manager.add_answer(answer)
+            return
+
+        await db_manager.update_answer_by_id(
+            answer_id=existing_answer.id,
+            dispatch_number=(existing_answer.dispatch_number + 1),
+            **values_to_replace
+        )
+
+    @staticmethod
     @abstractmethod
-    async def needs_message_answer() -> bool:
+    def needs_message_answer() -> bool:
         pass
 
     @abstractmethod
@@ -36,7 +61,7 @@ class Question(ABC):
 
     @staticmethod
     @abstractmethod
-    def is_valid_answer(message: types.Message | None) -> bool:
+    def is_valid_answer(message: Message | None) -> bool:
         """
         we wanna validate messages only with text
         """
@@ -44,7 +69,7 @@ class Question(ABC):
 
     @staticmethod
     @abstractmethod
-    def get_answer(user_ans: types.Message | types.CallbackQuery, task_id: int) -> Answer:
+    async def save_answer(user_ans: Message | CallbackQuery, task_id: int) -> None:
         """
         convert user answer message or callback from user to Answer table object
         """
@@ -65,28 +90,28 @@ class StringOrTextQuestion(Question):
         super().__init__(task)
 
     @staticmethod
-    async def needs_message_answer() -> bool:
+    def needs_message_answer() -> bool:
         return True
 
     async def send_question(self, bot: Bot, user_id: int):
-        msg_to_del = []
+        messages_to_delete = []
         if self.task.input_media:
             msg1 = await bot.send_photo(
                 chat_id=user_id,
                 photo=str(self.task.input_media)
             )
-            msg_to_del.append(msg1)
+            messages_to_delete.append(msg1)
 
         msg2 = await bot.send_message(
             chat_id=user_id,
             text=self.task.text,
             reply_markup=get_no_options_keyboard(self.task)
         )
-        msg_to_del.append(msg2)
-        return msg_to_del
+        messages_to_delete.append(msg2)
+        return messages_to_delete
 
     @staticmethod
-    def is_valid_answer(message: types.Message):
+    def is_valid_answer(message: Message):
         # todo invoke this function after user sent a message, user has current
         #  test id and current task id flags in db and the type of current task is STRING_OR_TEXT
         if not message.text:
@@ -94,14 +119,25 @@ class StringOrTextQuestion(Question):
 
         return True
 
+    @staticmethod
+    async def save_answer(user_ans: Message | CallbackQuery, task_id: int) -> None:
+        if not isinstance(user_ans, Message):
+            raise AssertionError(
+                f"user_ans expected as aiogram.types.Message, found: {type(user_ans)}")
+
+        values = {
+            "answer_data": [user_ans.text],
+            "status": AnswerStatus.SAVED,
+        }
+        await Question.check_answer_and_save(
+            values_to_replace=values,
+            user_id=user_ans.from_user.id,
+            task_id=task_id
+        )
+
     def convert_answer_to_string_repr(self, answer: Answer) -> str:
         pass
         # todo
-
-    @staticmethod
-    def get_answer(message: types.Message, task_id) -> Answer:
-        return Answer(answer_data=[message.text], status=AnswerStatus.UNCHECKED,
-                      task_id=task_id, user_id=message.from_user.id)
 
 
 class OneChoiceQuestion(Question):
@@ -109,7 +145,7 @@ class OneChoiceQuestion(Question):
         super().__init__(task)
 
     @staticmethod
-    async def needs_message_answer() -> bool:
+    def needs_message_answer() -> bool:
         return False
 
     async def send_question(self, bot: Bot, user_id: int) -> list[Message]:
@@ -119,45 +155,44 @@ class OneChoiceQuestion(Question):
 
         text = await self.get_options_text(options)
         answer = await db_manager.get_answer_by_task_id_and_user_id(self.task.id, user_id)
-        if not answer or answer.status == AnswerStatus.UNCHECKED:
-            chosen_variant = -1
-        else:
-            chosen_variant = int(answer.answer_data[0])
+        chosen_variant = -1 \
+            if not answer or answer.status == AnswerStatus.UNCHECKED \
+            else int(answer.answer_data[0])
 
         task = await db_manager.get_task_by_id(self.task.id)
-        msg_to_del = []
+        messages_to_delete = []
         if self.task.input_media:
             msg1 = await bot.send_photo(
                 chat_id=user_id,
                 photo=str(self.task.input_media)
             ),  # todo maybe incorrect media type
-            msg_to_del.append(msg1)
+            messages_to_delete.append(msg1)
 
         msg2 = await bot.send_message(
             chat_id=user_id,
             text=text,
             reply_markup=get_one_choice_keyboard(task, len(options), chosen_variant)
         )
-        msg_to_del.append(msg2)
-        return msg_to_del
+        messages_to_delete.append(msg2)
+        return messages_to_delete
 
     @staticmethod
-    def is_valid_answer(message: types.Message | None) -> bool:
+    def is_valid_answer(message: Message | None) -> bool:
         return True
 
     @staticmethod
-    def get_answer(user_ans: types.CallbackQuery, task_id: int) -> Answer:
-        if not user_ans.isinstance(types.CallbackQuery):
+    async def save_answer(user_ans: Message | CallbackQuery, task_id: int) -> None:
+        if not isinstance(user_ans, CallbackQuery):
             raise AssertionError(
-                f"user_ans expected as aiogram.types.CallbackQuery, found: {type(user_ans)}")
+                f"user_ans expected as aiogram.CallbackQuery, found: {type(user_ans)}")
 
         user_chosen_variant = user_ans.data.split('#')[-1]
-        return Answer(
-            answer_data=[user_chosen_variant],
-            status=AnswerStatus.CHOSEN,
-            task_id=task_id,
-            user_id=user_ans.from_user.id
-        )
+        values = {
+            "answer_data": [user_chosen_variant],
+            "status": AnswerStatus.SAVED,
+        }
+        await Question.check_answer_and_save(
+            values_to_replace=values, task_id=task_id, user_id=user_ans.from_user.id)
 
     def convert_answer_to_string_repr(self, answer: Answer) -> str:
         pass
@@ -168,53 +203,62 @@ class MultipleChoiceQuestion(Question):
         super().__init__(task)
 
     @staticmethod
-    async def needs_message_answer() -> bool:
+    def needs_message_answer() -> bool:
         return False
 
     async def send_question(self, bot: Bot, user_id: int) -> list[Message]:
         options = self.task.options
         if not options:
-            raise AssertionError(
-                "Expected answer options in this type of questions").add_note(f"For user {user_id}")
+            raise AssertionError("Expected answer options in this type of questions")
 
         text = await self.get_options_text(options)
 
-        chosen_options = []
         answer: Answer = db_manager.get_answer_by_task_id_and_user_id(self.task.id, user_id)
-        if answer.status == AnswerStatus.CHOSEN:
-            answer_data = answer.answer_data
-            chosen_options = [int(option) for option in answer_data]
-            # chosen_options = ast.literal_eval(answer_data)
+        chosen_options = [] \
+            if not answer or answer.status == AnswerStatus.UNCHECKED \
+            else [int(option) for option in answer.answer_data]
 
-        msg_to_del = []
+        messages_to_delete = []
         if self.task.input_media:
             msg1 = await bot.send_photo(
                 chat_id=user_id,
                 photo=str(self.task.input_media)
             )
-            msg_to_del.append(msg1)
+            messages_to_delete.append(msg1)
 
         msg2 = await bot.send_message(
             chat_id=user_id,
             text=text,
             reply_markup=get_multiple_choice_keyboard(self.task, len(options), chosen_options)
         )
-        msg_to_del.append(msg2)
-        return msg_to_del
+        messages_to_delete.append(msg2)
+        return messages_to_delete
 
-    def is_valid_answer(self, message: types.Message | None) -> bool:
+    @staticmethod
+    def is_valid_answer(message: Message | None) -> bool:
         return True
 
-    def get_answer(self, user_ans: types.CallbackQuery) -> Answer:
-        if not user_ans.isinstance(types.CallbackQuery):
-            raise AssertionError(f"user_ans expected as types.CallbackQuery, found: {type(user_ans)}")
+    @staticmethod
+    async def save_answer(user_ans: Message | CallbackQuery, task_id: int) -> None:
+        if not isinstance(user_ans, CallbackQuery):
+            raise AssertionError(f"user_ans expected as CallbackQuery, found: {type(user_ans)}")
 
-        new_chosen_option = user_ans.data.split("#")[2]
-        answer: Answer = db_manager.get_answer_by_task_id_and_user_id(
-            self.task.id, user_id=user_ans.from_user.id)
+        new_chosen_option = user_ans.data.split("#")[-1]
 
-        answer.answer_data.append(new_chosen_option)
-        return answer
+        def convert_answer_data(data: list[str]) -> list[str]:
+            data_set = set(data)
+            data_set.add(new_chosen_option)
+            return list(data_set)
+
+        values = {
+            "status": AnswerStatus.SAVED,
+        }
+        await Question.check_answer_and_save(
+            values_to_replace=values,
+            task_id=task_id,
+            user_id=user_ans.from_user.id,
+            answer_data_converter=convert_answer_data
+        )
 
     def convert_answer_to_string_repr(self, answer: Answer) -> str:
         pass

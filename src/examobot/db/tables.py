@@ -29,6 +29,7 @@ class AnswerStatus(Enum):
     """
     UNCHECKED = 0
     CHOSEN = 1
+    SAVED = 2
 
 
 class UserTestParticipationStatus(Enum):
@@ -154,6 +155,7 @@ class Answer(Base):
 
     answer_data: Column[ARRAY[str]] = Column(ARRAY(String), nullable=True, default=None)
     status: Mapped[AnswerStatus] = mapped_column(nullable=False, default=AnswerStatus.UNCHECKED)
+    dispatch_number: Mapped[int] = mapped_column(nullable=False, default=1)
 
     task_id: Mapped[int] = mapped_column(ForeignKey("tasks.id"))  # Child
     task: Mapped[Task] = relationship(back_populates="answers")
