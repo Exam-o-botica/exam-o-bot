@@ -3,6 +3,7 @@ from aiogram import types
 from keyboard_texts import *
 from entity import Entity
 from src.examobot.db.tables import *
+from src.examobot.task_translator.keyboard_task_texts import END_TEST
 
 BACK_TO_MAIN_MENU_BUTTON = BACK_TO_MAIN_MENU.get_button()
 GO_TO_MAIN_MENU_BUTTON = BACK_TO_MAIN_MENU.get_button(new_text=GO_TO_MAIN_MENU_TEXT)

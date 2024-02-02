@@ -196,6 +196,12 @@ class DBManager:
             await session.execute(query)
             await session.commit()
 
+    async def update_user_by_id(self, user_id: int, **kwargs):
+        query = update(User).values(**kwargs).where(User.id == user_id)
+        async with self.session_maker() as session:
+            await session.execute(query)
+            await session.commit()
+
     # CURRENT TESTS
 
     async def get_current_ended_or_with_no_attempts_tests_by_user_id(self, user_id: int):
@@ -221,6 +227,8 @@ class DBManager:
 
         return tasks.scalars().all()
 
+    # TASKS
+
     async def get_task_by_id(self, task_id: int):
         query = select(Task).where(Task.id == task_id)
         async with self.session_maker() as session:
@@ -243,8 +251,6 @@ class DBManager:
 
         return new_task
 
-    # TASK
-
     # ANSWERS
 
     async def get_answer_by_task_id_and_user_id(self, task_id: int, user_id: int):
@@ -255,6 +261,11 @@ class DBManager:
             result = await session.execute(query)
             answer = result.scalars().first()
             return answer
+
+    async def add_answer(self, answer: Answer):
+        async with self.session_maker() as session:
+            session.add(answer)
+            await session.commit()
 
 
 db_manager = DBManager()

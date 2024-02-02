@@ -4,35 +4,6 @@ from aiogram.types import InlineKeyboardButton
 
 from src.examobot.bot.Button import Button
 
-# class Button:
-#     callback_suffix: str = "_callback"
-#
-#     def __init__(self, name: str, text: str) -> None:
-#         self.name = name
-#         self.txt = text
-#
-#     @property
-#     def text(self):
-#         return self.txt
-#
-#     @property
-#     def callback(self):
-#         return self.name.lower() + self.callback_suffix
-#
-#     def get_button(self,
-#                    new_text: Optional[str] = None,
-#                    parameters: Optional[list[Any]] = None,
-#                    ) -> InlineKeyboardButton:
-#         callback = self.callback
-#         if parameters:
-#             callback = callback + "#" + "#".join([str(p) for p in parameters])
-#
-#         text = new_text if new_text else self.txt
-#         return InlineKeyboardButton(text=text, callback_data=callback)
-#
-#     def has_that_callback(self, received_callback: str):
-#         return received_callback.startswith(self.callback)
-
 
 GO_TO_MAIN_MENU_TEXT = 'go to menu'
 GO_TO_PREVIOUS_MENU_TEXT = 'Back'
@@ -124,6 +95,4 @@ CURRENT_AVAILABLE_TEST_WITH_ATTEMPTS = Button(
     name='CURRENT_AVAILABLE_TEST_WITH_ATTEMPTS', text='available tests')
 
 SPEC_CURRENT_TEST_TASK = Button(name='SPEC_CURRENT_TEST_TASK', text='question')
-
-END_TEST = Button(name='END_TEST', text='end test')
 
