@@ -25,13 +25,18 @@ class Question(ABC):
             msg += f'<b>Вариант {ind}</b>: {value}\n'
         return msg
 
+    @staticmethod
+    @abstractmethod
+    async def needs_message_answer() -> bool:
+        pass
+
     @abstractmethod
     async def send_question(self, bot: Bot, user_id: int) -> list[Message]:
         pass
 
     @staticmethod
     @abstractmethod
-    def validate_answer(message: types.Message | None) -> bool:
+    def is_valid_answer(message: types.Message | None) -> bool:
         """
         we wanna validate messages only with text
         """
@@ -59,21 +64,29 @@ class StringOrTextQuestion(Question):
     def __init__(self, task: Task) -> None:
         super().__init__(task)
 
+    @staticmethod
+    async def needs_message_answer() -> bool:
+        return True
+
     async def send_question(self, bot: Bot, user_id: int):
-        # todo we need to put a flag in db with current test id and current task id
         msg_to_del = []
         if self.task.input_media:
-            msg1 = await bot.send_photo(chat_id=user_id,
-                                        photo=str(self.task.input_media))
+            msg1 = await bot.send_photo(
+                chat_id=user_id,
+                photo=str(self.task.input_media)
+            )
             msg_to_del.append(msg1)
 
-        msg2 = await bot.send_message(chat_id=user_id, text=self.task.text,
-                                      reply_markup=get_no_options_keyboard(self.task))
+        msg2 = await bot.send_message(
+            chat_id=user_id,
+            text=self.task.text,
+            reply_markup=get_no_options_keyboard(self.task)
+        )
         msg_to_del.append(msg2)
         return msg_to_del
 
     @staticmethod
-    def validate_answer(message: types.Message):
+    def is_valid_answer(message: types.Message):
         # todo invoke this function after user sent a message, user has current
         #  test id and current task id flags in db and the type of current task is STRING_OR_TEXT
         if not message.text:
@@ -95,14 +108,18 @@ class OneChoiceQuestion(Question):
     def __init__(self, task: Task) -> None:
         super().__init__(task)
 
+    @staticmethod
+    async def needs_message_answer() -> bool:
+        return False
+
     async def send_question(self, bot: Bot, user_id: int) -> list[Message]:
         options = self.task.options
         if not options:
             raise AssertionError("Expected answer options in this type of questions")
 
-        text = self.get_options_text(options)
+        text = await self.get_options_text(options)
         answer = await db_manager.get_answer_by_task_id_and_user_id(self.task.id, user_id)
-        if answer.status == AnswerStatus.UNCHECKED:
+        if not answer or answer.status == AnswerStatus.UNCHECKED:
             chosen_variant = -1
         else:
             chosen_variant = int(answer.answer_data[0])
@@ -110,29 +127,37 @@ class OneChoiceQuestion(Question):
         task = await db_manager.get_task_by_id(self.task.id)
         msg_to_del = []
         if self.task.input_media:
-            msg1 = await bot.send_photo(chat_id=user_id,
-                                        photo=str(self.task.input_media)),  # todo maybe incorrect media type
+            msg1 = await bot.send_photo(
+                chat_id=user_id,
+                photo=str(self.task.input_media)
+            ),  # todo maybe incorrect media type
             msg_to_del.append(msg1)
 
-        msg2 = await bot.send_message(chat_id=user_id, text=text,
-                                      reply_markup=get_one_choice_keyboard(task, len(options), chosen_variant))
+        msg2 = await bot.send_message(
+            chat_id=user_id,
+            text=text,
+            reply_markup=get_one_choice_keyboard(task, len(options), chosen_variant)
+        )
         msg_to_del.append(msg2)
         return msg_to_del
 
     @staticmethod
-    def validate_answer(message: types.Message | None) -> bool:
+    def is_valid_answer(message: types.Message | None) -> bool:
         return True
 
     @staticmethod
     def get_answer(user_ans: types.CallbackQuery, task_id: int) -> Answer:
         if not user_ans.isinstance(types.CallbackQuery):
-            raise AssertionError(f"user_ans expected as types.CallbackQuery, found: {type(user_ans)}")
+            raise AssertionError(
+                f"user_ans expected as aiogram.types.CallbackQuery, found: {type(user_ans)}")
 
         user_chosen_variant = user_ans.data.split('#')[-1]
-        return Answer(answer_data=[user_chosen_variant],
-                      status=AnswerStatus.CHOSEN,
-                      task_id=task_id,
-                      user_id=user_ans.from_user.id)
+        return Answer(
+            answer_data=[user_chosen_variant],
+            status=AnswerStatus.CHOSEN,
+            task_id=task_id,
+            user_id=user_ans.from_user.id
+        )
 
     def convert_answer_to_string_repr(self, answer: Answer) -> str:
         pass
@@ -141,6 +166,10 @@ class OneChoiceQuestion(Question):
 class MultipleChoiceQuestion(Question):
     def __init__(self, task: Task) -> None:
         super().__init__(task)
+
+    @staticmethod
+    async def needs_message_answer() -> bool:
+        return False
 
     async def send_question(self, bot: Bot, user_id: int) -> list[Message]:
         options = self.task.options
@@ -173,7 +202,7 @@ class MultipleChoiceQuestion(Question):
         msg_to_del.append(msg2)
         return msg_to_del
 
-    def validate_answer(self, message: types.Message | None) -> bool:
+    def is_valid_answer(self, message: types.Message | None) -> bool:
         return True
 
     def get_answer(self, user_ans: types.CallbackQuery) -> Answer:

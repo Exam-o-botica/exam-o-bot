@@ -20,9 +20,15 @@ class TestStatus(Enum):
 
 
 class AnswerStatus(Enum):
+    """
+    Every AnswerStatus indicates that user is still passing test
+
+    UNCHECKED - default status for Answer, it means that answer is written
+    CHOSEN    - indicates that answer (`answer_data`) for the task could change
+        and is chosen now as possible answer
+    """
     UNCHECKED = 0
     CHOSEN = 1
-    SENT = 2
 
 
 class UserTestParticipationStatus(Enum):

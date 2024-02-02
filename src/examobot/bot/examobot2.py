@@ -170,6 +170,12 @@ async def welcome_message(message: types.Message, command: CommandObject) -> Non
         await db_manager.add_user(message.from_user.id, message.from_user.username, name=name)
         await message.bot.send_message(message.from_user.id, START_TEXT)
 
+    await db_manager.update_user_by_id(
+        message.from_user.id,
+        current_task_id=None,
+        current_test_id=None,
+    )
+
     if not args:
         await message.bot.send_message(
             message.from_user.id,
@@ -353,8 +359,11 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
     # CURRENT TESTS
 
     elif CURRENT_TESTS.has_that_callback(call.data):
-        await call.bot.edit_message_text("choose test types", call.from_user.id, call.message.message_id,
-                                         reply_markup=get_current_tests_menu_keyboard())
+        await call.bot.edit_message_text(
+            "choose test types",
+            call.from_user.id,
+            call.message.message_id,
+            reply_markup=get_current_tests_menu_keyboard())
 
     elif CURRENT_AVAILABLE_TEST_WITH_ATTEMPTS.has_that_callback(call.data):
         await handle_current_available_test_with_attempts_query(call)
@@ -374,7 +383,16 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
     elif BACK_TO_TEST_QUESTION_FROM_TASK.has_that_callback(call.data):
         await handle_back_to_test_question_from_task_query(call)
 
+    # elif END_TEST.has_that_callback(call.data):
+    #     await handle_end_test_query(call)
 
+    # QUESTIONS
+
+    # elif ONE_CHOICE_QUESTION_OPTION.has_that_callback(call.data):
+    #     await handle_one_choice_question_option_query(call)
+
+    # elif MULTIPLE_CHOICE_QUESTION_OPTION.has_that_callback(call.data):
+    #     await handle_multiple_choice_question_option_query(call)
 
     # CURRENT CLASSROOMS
 
@@ -390,11 +408,14 @@ async def handle_back_to_test_question_from_task_query(call: types.CallbackQuery
     test_id = get_test_id_or_classroom_id_from_callback(call.data)
     test = await db_manager.get_test_by_id(test_id)
     if not test:
-        await call.bot.edit_message_text("this test was deleted by author",
-                                         call.from_user.id,
-                                         call.message.message_id,
-                                         reply_markup=get_go_to_main_menu_keyboard())
+        await call.bot.edit_message_text(
+            "this test was deleted by author",
+            call.from_user.id,
+            call.message.message_id,
+            reply_markup=get_go_to_main_menu_keyboard()
+        )
         return
+
     tasks: list[Task] = await db_manager.get_tasks_by_test_id(test_id)
     await call.bot.edit_message_text(
         test.title,
@@ -408,19 +429,25 @@ async def handle_spec_current_test_task_query(call: types.CallbackQuery):
     task_id = get_test_id_or_classroom_id_from_callback(call.data)
     task = await db_manager.get_task_by_id(task_id)
     if not task:
-        await call.bot.edit_message_text("this test was deleted by author",
-                                         call.from_user.id,
-                                         call.message.message_id,
-                                         reply_markup=get_go_to_main_menu_keyboard())
+        await call.bot.edit_message_text(
+            text="this test was deleted by author",
+            chat_id=call.from_user.id,
+            message_id=call.message.message_id,
+            reply_markup=get_go_to_main_menu_keyboard()
+        )
         return
 
     await call.bot.delete_message(call.from_user.id, call.message.message_id)
 
     question = QuestionType[task.task_type].value(task)
-    msg_to_del = await question.send_question(call.bot, call.from_user.id)
-    msg_to_del = [msg.message_id for msg in msg_to_del if msg is not None]
-    await db_manager.update_user_by_id(call.from_user.id, current_task_id=task_id,
-                                       current_messages_to_delete=msg_to_del)
+    messages_to_delete = await question.send_question(call.bot, call.from_user.id)
+
+    message_ids_to_delete = [msg.message_id for msg in messages_to_delete if msg is not None]
+    await db_manager.update_user_by_id(
+        call.from_user.id,
+        current_task_id=task_id,
+        current_messages_to_delete=message_ids_to_delete
+    )
 
     # await call.bot.edit_message_text(f"task title: {task.title}\n"
     #                                  f"task text: {task.text}\n"
@@ -1146,8 +1173,13 @@ async def handle_authors_tests_query(call: types.CallbackQuery, state: FSMContex
         text = "you haven't created any tests yet. But u can create a new one"
     else:
         text = "tests you have created"
-    await call.bot.edit_message_text(text, call.from_user.id, call.message.message_id,
-                                     reply_markup=get_created_tests_keyboard(authors_tests))
+
+    await call.bot.edit_message_text(
+        text=text,
+        chat_id=call.from_user.id,
+        message_id=call.message.message_id,
+        reply_markup=get_created_tests_keyboard(authors_tests)
+    )
 
 
 @dp.message()
@@ -1157,45 +1189,56 @@ async def handle_message(message: types.Message):
     cur_task_id = user.current_task_id
 
     if not cur_test_id or not cur_task_id:
-        print('no current not nor task')
+        await message.bot.delete_message(message.from_user.id, message.message_id)
         return
+
     task = await db_manager.get_task_by_id(cur_task_id)
-
-    if task.task_type != QuestionType.STRING_OR_TEXT.name:
-        print('wrong type')
+    if not task:
+        await message.bot.edit_message_text(
+            "this test was deleted by author",
+            message.from_user.id,
+            message.message.message_id,
+            reply_markup=get_go_to_main_menu_keyboard()
+        )
         return
 
-    if not StringOrTextQuestion.validate_answer(message):
-        # todo tell that invalid answer
-        pass
+    type_names_to_handle = QuestionType.get_names_of_types_with_message_answers()
+    if task.task_type not in type_names_to_handle:
+        await message.bot.delete_message(message.from_user.id, message.message_id)
+        return
+
+    question: Question = QuestionType[task.task_type].value
+    if not question.is_valid_answer(message):
+        await message.answer("invalid format of answer. please, try again")
+        await message.bot.delete_message(message.from_user.id, message.message_id)
 
     user = await db_manager.get_user_by_id(message.from_user.id)
-
     if user.current_messages_to_delete:
         for msg_id in user.current_messages_to_delete:
             try:
                 await message.bot.delete_message(message.from_user.id, msg_id)
-            except Exception as e:
+            except Exception:
                 pass
+
         await db_manager.update_user_by_id(message.from_user.id, current_messages_to_delete=[])
 
-    answer = StringOrTextQuestion.get_answer(message, task.id)
-    await db_manager.add_answer(answer)  # todo status change !!!!!
+    answer = question.get_answer(message, task.id)
+    await db_manager.add_answer(answer)
     await db_manager.update_user_by_id(message.from_user.id, current_task_id=None)
 
     test = await db_manager.get_test_by_id(cur_test_id)
     if not test:
-        await message.bot.edit_message_text("this test was deleted by author",
-                                            message.from_user.id,
-                                            message.message.message_id,
-                                            reply_markup=get_go_to_main_menu_keyboard())
+        await message.bot.edit_message_text(
+            "this test was deleted by author",
+            message.from_user.id,
+            message.message.message_id,
+            reply_markup=get_go_to_main_menu_keyboard()
+        )
         return
 
     await message.answer("answer saved")
 
     tasks: list[Task] = await db_manager.get_tasks_by_test_id(cur_test_id)
-    # get_current_test_tasks_keyboard
-
     await message.bot.send_message(
         message.from_user.id,
         test.title,

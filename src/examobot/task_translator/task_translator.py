@@ -99,9 +99,9 @@ class Translator:
 
         elif 'choiceQuestion' in item['questionItem']['question']:
             try:
-                type_ = item['questionItem']['question']['type']
-            except KeyError as e:
-                raise TranslationError(f'cannot parse question: {item["title"]}')
+                type_ = item['questionItem']['question']['choiceQuestion']['type']
+            except KeyError:
+                raise TranslationError(f'cannot parse question type: {item["title"]}')
 
             if type_ == "RADIO":
                 return QuestionType.ONE_CHOICE.name
@@ -109,7 +109,7 @@ class Translator:
                 return QuestionType.MULTIPLE_CHOICE.name
 
         # todo add other types here
-        raise TranslationError(f'cannot parse question: {item["title"]}')
+        raise TranslationError(f'cannot parse question type: {item["title"]}')
 
     @staticmethod
     def _get_options_and_is_other(item: dict):
