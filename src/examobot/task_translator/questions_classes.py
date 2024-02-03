@@ -13,10 +13,6 @@ from src.examobot.task_translator.task_keyboards import *
 
 
 class Question(ABC):
-
-    def __init__(self, task: Task) -> None:
-        self.task = task
-
     @staticmethod
     async def get_options_text(options: list[str]):
         msg = "Варианты ответа:\n"
@@ -36,13 +32,13 @@ class Question(ABC):
             user_id=user_id
         )
 
-        if answer_data_converter:
-            values_to_replace["answer_data"] = answer_data_converter(existing_answer.answer_data)
-
         if not existing_answer:
             answer = Answer(**values_to_replace, task_id=task_id, user_id=user_id)
             await db_manager.add_answer(answer)
             return
+
+        if answer_data_converter:
+            values_to_replace["answer_data"] = answer_data_converter(existing_answer.answer_data)
 
         await db_manager.update_answer_by_id(
             answer_id=existing_answer.id,
@@ -55,8 +51,9 @@ class Question(ABC):
     def needs_message_answer() -> bool:
         pass
 
+    @staticmethod
     @abstractmethod
-    async def send_question(self, bot: Bot, user_id: int) -> list[Message]:
+    async def send_question(bot: Bot, user_id: int, task: Task) -> list[Message]:
         pass
 
     @staticmethod
@@ -86,26 +83,24 @@ class Question(ABC):
 
 class StringOrTextQuestion(Question):
 
-    def __init__(self, task: Task) -> None:
-        super().__init__(task)
-
     @staticmethod
     def needs_message_answer() -> bool:
         return True
 
-    async def send_question(self, bot: Bot, user_id: int):
+    @staticmethod
+    async def send_question(bot: Bot, user_id: int, task: Task):
         messages_to_delete = []
-        if self.task.input_media:
+        if task.input_media:
             msg1 = await bot.send_photo(
                 chat_id=user_id,
-                photo=str(self.task.input_media)
+                photo=str(task.input_media)
             )
             messages_to_delete.append(msg1)
 
         msg2 = await bot.send_message(
             chat_id=user_id,
-            text=self.task.text,
-            reply_markup=get_no_options_keyboard(self.task)
+            text=task.text,
+            reply_markup=get_no_options_keyboard(task)
         )
         messages_to_delete.append(msg2)
         return messages_to_delete
@@ -141,30 +136,28 @@ class StringOrTextQuestion(Question):
 
 
 class OneChoiceQuestion(Question):
-    def __init__(self, task: Task) -> None:
-        super().__init__(task)
-
     @staticmethod
     def needs_message_answer() -> bool:
         return False
 
-    async def send_question(self, bot: Bot, user_id: int) -> list[Message]:
-        options = self.task.options
+    @staticmethod
+    async def send_question(bot: Bot, user_id: int, task: Task) -> list[Message]:
+        options = task.options
         if not options:
             raise AssertionError("Expected answer options in this type of questions")
 
-        text = await self.get_options_text(options)
-        answer = await db_manager.get_answer_by_task_id_and_user_id(self.task.id, user_id)
+        text = await Question.get_options_text(options)
+        answer = await db_manager.get_answer_by_task_id_and_user_id(task.id, user_id)
         chosen_variant = -1 \
             if not answer or answer.status == AnswerStatus.UNCHECKED \
             else int(answer.answer_data[0])
 
-        task = await db_manager.get_task_by_id(self.task.id)
+        task = await db_manager.get_task_by_id(task.id)
         messages_to_delete = []
-        if self.task.input_media:
+        if task.input_media:
             msg1 = await bot.send_photo(
                 chat_id=user_id,
-                photo=str(self.task.input_media)
+                photo=str(task.input_media)
             ),  # todo maybe incorrect media type
             messages_to_delete.append(msg1)
 
@@ -199,37 +192,36 @@ class OneChoiceQuestion(Question):
 
 
 class MultipleChoiceQuestion(Question):
-    def __init__(self, task: Task) -> None:
-        super().__init__(task)
 
     @staticmethod
     def needs_message_answer() -> bool:
         return False
 
-    async def send_question(self, bot: Bot, user_id: int) -> list[Message]:
-        options = self.task.options
+    @staticmethod
+    async def send_question(bot: Bot, user_id: int, task: Task) -> list[Message]:
+        options = task.options
         if not options:
             raise AssertionError("Expected answer options in this type of questions")
 
-        text = await self.get_options_text(options)
+        text = await Question.get_options_text(options)
 
-        answer: Answer = db_manager.get_answer_by_task_id_and_user_id(self.task.id, user_id)
+        answer: Answer = await db_manager.get_answer_by_task_id_and_user_id(task.id, user_id)
         chosen_options = [] \
             if not answer or answer.status == AnswerStatus.UNCHECKED \
             else [int(option) for option in answer.answer_data]
 
         messages_to_delete = []
-        if self.task.input_media:
+        if task.input_media:
             msg1 = await bot.send_photo(
                 chat_id=user_id,
-                photo=str(self.task.input_media)
+                photo=str(task.input_media)
             )
             messages_to_delete.append(msg1)
 
         msg2 = await bot.send_message(
             chat_id=user_id,
             text=text,
-            reply_markup=get_multiple_choice_keyboard(self.task, len(options), chosen_options)
+            reply_markup=get_multiple_choice_keyboard(task, len(options), chosen_options)
         )
         messages_to_delete.append(msg2)
         return messages_to_delete
@@ -247,10 +239,15 @@ class MultipleChoiceQuestion(Question):
 
         def convert_answer_data(data: list[str]) -> list[str]:
             data_set = set(data)
-            data_set.add(new_chosen_option)
+            if new_chosen_option in data_set:
+                data_set.remove(new_chosen_option)
+            else:
+                data_set.add(new_chosen_option)
+
             return list(data_set)
 
         values = {
+            "answer_data": [],
             "status": AnswerStatus.SAVED,
         }
         await Question.check_answer_and_save(

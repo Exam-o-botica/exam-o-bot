@@ -1,39 +1,30 @@
 import asyncio
-import json
 import logging
 import os
 import re
 import sys
 import time
-import types
 from datetime import datetime
 from pprint import pprint
 
-from aiogram import Dispatcher, Bot
+from aiogram import Dispatcher
 from aiogram.filters import CommandStart, CommandObject
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
-from aiogram.types import Message
 
-from consts import *
-from keyboards import *
-# from src.examobot.db.manager import db_manager
+from src.examobot.bot.consts import *
+from src.examobot.bot.examobot_tasks import tasks_router, handle_one_choice_question_option_query, \
+    handle_multiple_choice_question_option_query
+from src.examobot.bot.keyboards import *
+from src.examobot.db.tables import *
+from src.examobot.form_handlers import *
 from src.examobot.task_translator.QuestionType import QuestionType
-# from src.examobot.task_translator.QuestionType import QuestionType
-
 from src.examobot.task_translator.questions_classes import *
 from src.examobot.task_translator.task_translator import Translator, TranslationError
-from src.examobot.form_handlers import *
-from src.examobot.db.tables import *
-from src.examobot.bot.entity import Entity
-
-# from src.main import bot, dp
 
 TOKEN = os.getenv("EXAM_O_BOT_TOKEN")
 dp = Dispatcher()
-
-
-# db_manager = DBManager()
+dp.include_router(tasks_router)
 
 
 class Form(StatesGroup):
@@ -160,6 +151,15 @@ class Validations:
         return text.strip()
 
 
+def get_user_name(user: types.User) -> str:
+    name = ""
+    if user.first_name:
+        name += user.first_name
+    if user.last_name:
+        name += f" {user.last_name}"
+    return name
+
+
 @dp.message(CommandStart())
 async def welcome_message(message: types.Message, command: CommandObject) -> None:
     name = get_user_name(message.from_user)
@@ -209,10 +209,10 @@ async def welcome_message(message: types.Message, command: CommandObject) -> Non
                 SUCCESSFULLY_ADDED_TO_CLASSROOM.format(classroom.title),
                 reply_markup=get_go_to_main_menu_keyboard())
 
-            await send_message_to_user(
-                message.bot,
+            await message.bot.send_message(
                 classroom.author_id,
-                message=f"user @{message.from_user.username} joined your classroom \"{classroom.title}\"")
+                text=f"user @{message.from_user.username} joined your classroom \"{classroom.title}\"",
+            )
 
         elif Validations.is_valid_share_link(args, "test"):
             test_uuid = args.split("=")[1]
@@ -247,29 +247,17 @@ async def welcome_message(message: types.Message, command: CommandObject) -> Non
                 reply_markup=get_go_to_main_menu_keyboard())
 
 
-def get_user_name(user: types.User) -> str:
-    name = ""
-    if user.first_name:
-        name += user.first_name
-    if user.last_name:
-        name += f" {user.last_name}"
-    return name
-
-
-async def send_message_to_user(bot: Bot, user_id: int, message: str, reply_markup=None) -> None:
-    try:
-        await bot.send_message(user_id, message, reply_markup=reply_markup)
-    except Exception as e:
-        logging.error(f"error while sending message to user {user_id}: {e}")
-
-
 @dp.callback_query()
 async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
     # main menu authors options
 
     if BACK_TO_MAIN_MENU.has_that_callback(call.data):
-        await call.bot.edit_message_text(MAIN_MENU_TEXT, call.from_user.id, call.message.message_id,
-                                         reply_markup=get_main_menu_keyboard())
+        await call.bot.edit_message_text(
+            MAIN_MENU_TEXT,
+            call.from_user.id,
+            call.message.message_id,
+            reply_markup=get_main_menu_keyboard()
+        )
 
     # CREATED CLASSROOMS
 
@@ -380,19 +368,19 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
     elif SPEC_CURRENT_TEST_TASK.has_that_callback(call.data):
         await handle_spec_current_test_task_query(call)
 
-    elif BACK_TO_TEST_QUESTION_FROM_TASK.has_that_callback(call.data):
-        await handle_back_to_test_question_from_task_query(call)
+    elif BACK_TO_TEST_QUESTIONS_FROM_TASK.has_that_callback(call.data):
+        await handle_back_to_test_questions_from_task_query(call)
 
     # elif END_TEST.has_that_callback(call.data):
     #     await handle_end_test_query(call)
 
     # QUESTIONS
 
-    # elif ONE_CHOICE_QUESTION_OPTION.has_that_callback(call.data):
-    #     await handle_one_choice_question_option_query(call)
+    elif ONE_CHOICE_QUESTION_OPTION.has_that_callback(call.data):
+        await handle_one_choice_question_option_query(call)
 
-    # elif MULTIPLE_CHOICE_QUESTION_OPTION.has_that_callback(call.data):
-    #     await handle_multiple_choice_question_option_query(call)
+    elif MULTIPLE_CHOICE_QUESTION_OPTION.has_that_callback(call.data):
+        await handle_multiple_choice_question_option_query(call)
 
     # CURRENT CLASSROOMS
 
@@ -403,7 +391,7 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
         await handle_spec_current_classroom_query(call)
 
 
-async def handle_back_to_test_question_from_task_query(call: types.CallbackQuery):
+async def handle_back_to_test_questions_from_task_query(call: types.CallbackQuery):
     await db_manager.update_user_by_id(call.from_user.id, current_task_id=None)
     test_id = get_test_id_or_classroom_id_from_callback(call.data)
     test = await db_manager.get_test_by_id(test_id)
@@ -439,8 +427,8 @@ async def handle_spec_current_test_task_query(call: types.CallbackQuery):
 
     await call.bot.delete_message(call.from_user.id, call.message.message_id)
 
-    question = QuestionType[task.task_type].value(task)
-    messages_to_delete = await question.send_question(call.bot, call.from_user.id)
+    question: Question = QuestionType[task.task_type].value
+    messages_to_delete = await question.send_question(call.bot, call.from_user.id, task)
 
     message_ids_to_delete = [msg.message_id for msg in messages_to_delete if msg is not None]
     await db_manager.update_user_by_id(
@@ -656,7 +644,10 @@ async def send_test_to_classroom_participants(test_id: int, classroom_id: int, b
     participants = await db_manager.get_users_in_classroom(classroom_id)
     for participant in participants:
         await db_manager.add_user_to_test_participants(test_id, participant.id)
-        await send_message_to_user(bot, participant.id, "you have new test to pass")
+        await bot.send_message(
+            participant.id,
+            text="you have new test to pass"
+        )
 
 
 async def handle_share_test_link_to_classroom_query(call: types.CallbackQuery) -> None:
@@ -1180,69 +1171,6 @@ async def handle_authors_tests_query(call: types.CallbackQuery, state: FSMContex
         chat_id=call.from_user.id,
         message_id=call.message.message_id,
         reply_markup=get_created_tests_keyboard(authors_tests)
-    )
-
-
-@dp.message()
-async def handle_message(message: types.Message):
-    user = await db_manager.get_user_by_id(message.from_user.id)
-    cur_test_id = user.current_test_id
-    cur_task_id = user.current_task_id
-
-    if not cur_test_id or not cur_task_id:
-        await message.bot.delete_message(message.from_user.id, message.message_id)
-        return
-
-    task = await db_manager.get_task_by_id(cur_task_id)
-    if not task:
-        await message.bot.edit_message_text(
-            "this test was deleted by author",
-            message.from_user.id,
-            message.message.message_id,
-            reply_markup=get_go_to_main_menu_keyboard()
-        )
-        return
-
-    type_names_to_handle = QuestionType.get_names_of_types_with_message_answers()
-    if task.task_type not in type_names_to_handle:
-        await message.bot.delete_message(message.from_user.id, message.message_id)
-        return
-
-    question: Question = QuestionType[task.task_type].value
-    if not question.is_valid_answer(message):
-        await message.answer("invalid format of answer. please, try again")
-        await message.bot.delete_message(message.from_user.id, message.message_id)
-
-    user = await db_manager.get_user_by_id(message.from_user.id)
-    if user.current_messages_to_delete:
-        for msg_id in user.current_messages_to_delete:
-            try:
-                await message.bot.delete_message(message.from_user.id, msg_id)
-            except Exception:
-                pass
-
-        await db_manager.update_user_by_id(message.from_user.id, current_messages_to_delete=[])
-
-    await question.save_answer(message, task.id)
-    await db_manager.update_user_by_id(message.from_user.id, current_task_id=None)
-
-    test = await db_manager.get_test_by_id(cur_test_id)
-    if not test:
-        await message.bot.edit_message_text(
-            "this test was deleted by author",
-            message.from_user.id,
-            message.message.message_id,
-            reply_markup=get_go_to_main_menu_keyboard()
-        )
-        return
-
-    await message.answer("answer saved")
-
-    tasks: list[Task] = await db_manager.get_tasks_by_test_id(cur_test_id)
-    await message.bot.send_message(
-        message.from_user.id,
-        test.title,
-        reply_markup=get_current_test_tasks_keyboard(tasks)
     )
 
 
