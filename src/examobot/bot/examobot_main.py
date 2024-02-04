@@ -15,6 +15,7 @@ from aiogram.fsm.state import StatesGroup, State
 from src.examobot.bot.consts import *
 from src.examobot.bot.examobot_tasks import tasks_router, handle_one_choice_question_option_query, \
     handle_multiple_choice_question_option_query
+# from src.examobot.bot.examobot_test_pass import handle_spec_current_test_query
 from src.examobot.bot.keyboards import *
 from src.examobot.db.tables import *
 from src.examobot.form_handlers import *
@@ -517,10 +518,12 @@ async def handle_spec_current_test_query(call: types.CallbackQuery):
     if await check_test_or_classroom_was_deleted_and_inform_user(test, "this test was deleted", call):
         return
 
-    await call.bot.edit_message_text(get_spec_test_info_message(test),
-                                     call.from_user.id, call.message.message_id,
-                                     reply_markup=get_spec_current_test_keyboard(test),
-                                     parse_mode="HTML")
+    await call.bot.edit_message_text(
+        get_spec_test_info_message(test),
+        call.from_user.id, call.message.message_id,
+        reply_markup=get_spec_current_test_keyboard(test),
+        parse_mode="HTML"
+    )
 
 
 async def handle_change_test_status_query(call: types.CallbackQuery, new_status: TestStatus) -> None:
@@ -716,16 +719,24 @@ def get_test_id_or_classroom_id_from_callback(callback: str) -> int:
 
 
 async def handle_spec_created_test_query(call: types.CallbackQuery, state: FSMContext) -> None:
+    """
+    Shows menu with test settings: edit, refresh and so on
+    """
     await state.clear()
     test_id = get_test_id_or_classroom_id_from_callback(call.data)
     test = await db_manager.get_test_by_id(test_id)
-    await call.bot.edit_message_text(get_spec_test_info_message(test),
-                                     call.from_user.id, call.message.message_id,
-                                     reply_markup=get_spec_created_test_keyboard(test),
-                                     parse_mode="HTML")
+    await call.bot.edit_message_text(
+        get_spec_test_info_message(test),
+        call.from_user.id, call.message.message_id,
+        reply_markup=get_spec_created_test_keyboard(test),
+        parse_mode="HTML"
+    )
 
 
 async def handle_edit_test_query(call: types.CallbackQuery, state: FSMContext) -> None:
+    """
+    Shows menu with specific things to edit in test
+    """
     test_id = int(call.data.split("#")[1])
     await state.clear()
     await call.bot.edit_message_text(
