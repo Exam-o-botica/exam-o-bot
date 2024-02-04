@@ -272,6 +272,19 @@ class DBManager:
             answer = result.scalars().first()
             return answer
 
+    async def get_answers_by_test_id_and_user_id(self, test_id: int, user_id: int):
+        query = select(Answer).where(
+            and_(
+                Answer.user_id == user_id,
+                Answer.task_id == test_id
+            )
+        )
+
+        async with self.session_maker() as session:
+            result = await session.execute(query)
+            answer = result.scalars().all()
+            return answer
+
     async def add_answer(self, answer: Answer):
         async with self.session_maker() as session:
             session.add(answer)

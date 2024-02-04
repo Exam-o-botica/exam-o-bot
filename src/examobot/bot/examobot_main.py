@@ -12,10 +12,11 @@ from aiogram.filters import CommandStart, CommandObject
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 
+from examobot.form_handlers.exceptions import JSONParseError, URLFailedCreationError, BadRequestError, HTMLParseError, \
+    TestCompleteFailError
 from src.examobot.bot.consts import *
 from src.examobot.bot.examobot_tasks import tasks_router, handle_one_choice_question_option_query, \
     handle_multiple_choice_question_option_query
-# from src.examobot.bot.examobot_test_pass import handle_spec_current_test_query
 from src.examobot.bot.keyboards import *
 from src.examobot.db.tables import *
 from src.examobot.form_handlers import *
@@ -372,8 +373,8 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
     elif BACK_TO_TEST_QUESTIONS_FROM_TASK.has_that_callback(call.data):
         await handle_back_to_test_questions_from_task_query(call)
 
-    # elif END_TEST.has_that_callback(call.data):
-    #     await handle_end_test_query(call)
+    elif END_TEST.has_that_callback(call.data):
+        await handle_end_test_query(call)
 
     # QUESTIONS
 
@@ -390,6 +391,46 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
 
     elif SPEC_CURRENT_CLASSROOM.has_that_callback(call.data):
         await handle_spec_current_classroom_query(call)
+
+
+async def send_end_test_error(call: CallbackQuery, test: Test, text: str):
+    tasks = await db_manager.get_tasks_by_test_id(test_id=test.id)
+    await call.bot.edit_message_text(
+        text=text,
+        chat_id=call.from_user.id,
+        reply_markup=get_current_test_tasks_keyboard(tasks=tasks)
+    )
+
+
+async def handle_end_test_query(call: CallbackQuery):
+    user_id = call.from_user.id
+    user = await db_manager.get_user_by_id(user_id)
+    cur_test_id = user.current_test_id
+
+    google_form_answers = dict()
+    answers = await db_manager.get_answers_by_test_id_and_user_id(test_id=cur_test_id, user_id=user_id)
+    for answer in answers:
+        task = await db_manager.get_task_by_id(task_id=answer.task_id)
+        question = QuestionType[task.task_type].value
+        google_form_answers[task.google_form_question_id] = question.convert_answer_to_string_repr(answer)
+
+    test = await db_manager.get_test_by_id(cur_test_id)
+    answer_sender = FormAnswerSender()
+    try:
+        await answer_sender.send_answer_metadata(test.meta_data, google_form_answers)
+        await call.bot.edit_message_text(
+            text="test successfully finished",
+            chat_id=call.from_user.id,
+            reply_markup=get_back_to_main_menu_keyboard()
+        )
+    except JSONParseError:
+        await send_end_test_error(call, test, text="unfortunately, some error occurred. try send later")
+    except URLFailedCreationError:
+        await send_end_test_error(call, test, text="unfortunately, some error with test data occurred.")
+    except BadRequestError:
+        await send_end_test_error(call, test, text="unfortunately, some error with connection occurred.")
+    except (HTMLParseError, TestCompleteFailError):
+        await send_end_test_error(call, test, text="unfortunately, some error occurred.")
 
 
 async def handle_back_to_test_questions_from_task_query(call: types.CallbackQuery):
@@ -883,7 +924,11 @@ async def type_edit_test(message: Message, state: FSMContext):
         )
         return
 
-    await db_manager.update_test_by_id(data["edit_test_id"], link=message.text.strip())
+    await db_manager.update_test_by_id(
+        data["edit_test_id"],
+        link=message.text.strip(),
+        meta_data=meta_data
+    )
     await edit_test_finish(message, state, data["edit_test_id"])
 
 
@@ -1086,9 +1131,11 @@ async def translate_to_task(string_json: str, call: types.CallbackQuery):
     try:
         tasks: list[dict] = extractor.translate()
     except TranslationError as e:
-        await call.bot.send_message(chat_id=call.from_user.id,
-                                    text=f"<b>Error while translating task from form </b>:\n {e}",
-                                    parse_mode="HTML")
+        await call.bot.send_message(
+            chat_id=call.from_user.id,
+            text=f"<b>Error while translating task from form </b>:\n {e}",
+            parse_mode="HTML"
+        )
         return
     return tasks
 

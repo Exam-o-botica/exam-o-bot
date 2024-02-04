@@ -72,8 +72,9 @@ class Question(ABC):
         """
         pass
 
+    @staticmethod
     @abstractmethod
-    def convert_answer_to_string_repr(self, answer: Answer) -> str:
+    def convert_answer_to_string_repr(answer: Answer) -> str:
         """
             this method is needed to convert answer to string representation of answer
             to use in the link that we send to google form back
@@ -130,7 +131,8 @@ class StringOrTextQuestion(Question):
             task_id=task_id
         )
 
-    def convert_answer_to_string_repr(self, answer: Answer) -> str:
+    @staticmethod
+    def convert_answer_to_string_repr(answer: Answer) -> str:
         pass
         # todo
 
@@ -187,7 +189,8 @@ class OneChoiceQuestion(Question):
         await Question.check_answer_and_save(
             values_to_replace=values, task_id=task_id, user_id=user_ans.from_user.id)
 
-    def convert_answer_to_string_repr(self, answer: Answer) -> str:
+    @staticmethod
+    def convert_answer_to_string_repr(answer: Answer) -> str:
         pass
 
 
@@ -257,5 +260,6 @@ class MultipleChoiceQuestion(Question):
             answer_data_converter=convert_answer_data
         )
 
-    def convert_answer_to_string_repr(self, answer: Answer) -> str:
+    @staticmethod
+    def convert_answer_to_string_repr(answer: Answer) -> str:
         pass

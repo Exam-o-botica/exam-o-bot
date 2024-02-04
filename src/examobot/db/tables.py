@@ -151,8 +151,6 @@ class Answer(Base):
     __tablename__ = 'answers'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    # uuid: Mapped[str] = mapped_column(index=True, autoincrement=False)
-
     answer_data: Column[ARRAY[str]] = Column(ARRAY(String), nullable=True, default=None)
     status: Mapped[AnswerStatus] = mapped_column(nullable=False, default=AnswerStatus.UNCHECKED)
     dispatch_number: Mapped[int] = mapped_column(nullable=False, default=1)
