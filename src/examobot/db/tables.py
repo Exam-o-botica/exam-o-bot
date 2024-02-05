@@ -20,9 +20,16 @@ class TestStatus(Enum):
 
 
 class AnswerStatus(Enum):
+    """
+    Every AnswerStatus indicates that user is still passing test
+
+    UNCHECKED - default status for Answer, it means that answer is written
+    CHOSEN    - indicates that answer (`answer_data`) for the task could change
+        and is chosen now as possible answer
+    """
     UNCHECKED = 0
     CHOSEN = 1
-    SENT = 2
+    SAVED = 2
 
 
 class UserTestParticipationStatus(Enum):
@@ -144,10 +151,9 @@ class Answer(Base):
     __tablename__ = 'answers'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    # uuid: Mapped[str] = mapped_column(index=True, autoincrement=False)
-
     answer_data: Column[ARRAY[str]] = Column(ARRAY(String), nullable=True, default=None)
     status: Mapped[AnswerStatus] = mapped_column(nullable=False, default=AnswerStatus.UNCHECKED)
+    dispatch_number: Mapped[int] = mapped_column(nullable=False, default=1)
 
     task_id: Mapped[int] = mapped_column(ForeignKey("tasks.id"))  # Child
     task: Mapped[Task] = relationship(back_populates="answers")

@@ -202,6 +202,12 @@ class DBManager:
             await session.execute(query)
             await session.commit()
 
+    async def update_answer_by_id(self, answer_id: int, **kwargs):
+        query = update(Answer).values(**kwargs).where(Answer.id == answer_id)
+        async with self.session_maker() as session:
+            await session.execute(query)
+            await session.commit()
+
     # CURRENT TESTS
 
     async def get_current_ended_or_with_no_attempts_tests_by_user_id(self, user_id: int):
@@ -254,12 +260,29 @@ class DBManager:
     # ANSWERS
 
     async def get_answer_by_task_id_and_user_id(self, task_id: int, user_id: int):
-        query = select(Answer).where(and_(Answer.user_id == user_id,
-                                          Answer.task_id == task_id))
+        query = select(Answer).where(
+            and_(
+                Answer.user_id == user_id,
+                Answer.task_id == task_id
+            )
+        )
 
         async with self.session_maker() as session:
             result = await session.execute(query)
             answer = result.scalars().first()
+            return answer
+
+    async def get_answers_by_test_id_and_user_id(self, test_id: int, user_id: int):
+        query = select(Answer).where(
+            and_(
+                Answer.user_id == user_id,
+                Answer.task_id == test_id
+            )
+        )
+
+        async with self.session_maker() as session:
+            result = await session.execute(query)
+            answer = result.scalars().all()
             return answer
 
     async def add_answer(self, answer: Answer):

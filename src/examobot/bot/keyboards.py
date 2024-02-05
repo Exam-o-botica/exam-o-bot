@@ -257,6 +257,6 @@ def get_current_test_tasks_keyboard(tasks: list[Task]):
 
     inline_keyboard = [
         *tasks_list,
-        [END_TEST.get_button(new_text=GO_TO_PREVIOUS_MENU_TEXT)],
+        [END_TEST.get_button(new_text="finish test")],
     ]
     return types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
