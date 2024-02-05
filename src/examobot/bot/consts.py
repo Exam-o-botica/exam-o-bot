@@ -1,5 +1,5 @@
-MAIN_MENU_TEXT = 'main menu'
-START_TEXT = 'welcome to examobot!'
+MAIN_MENU_TEXT = 'Главное меню'
+START_TEXT = 'Добро пожаловать в Exam-o-bot!'
 
-SUCCESSFULLY_ADDED_TO_CLASSROOM = 'You have successfully joined classroom {}'
-SUCCESSFULLY_ADDED_TO_TESTS = 'you was successfully joined to test "{}" participants. now you can pass it'
+SUCCESSFULLY_ADDED_TO_CLASSROOM = 'Вы успешно присоединились к группе {}'
+SUCCESSFULLY_ADDED_TO_TESTS = 'Вы успешно присоединились к тесту "{}". Теперь вы можете его пройти'
