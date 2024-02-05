@@ -60,22 +60,22 @@ possible start links:
 CREATION_FORMS = {
     "create_test_title": {
         "form": Form.create_test_title,
-        "state_text": "type test title #",
+        "state_text": "Введите заголовок",
         "next_state": "create_test_time",
     },
     "create_test_time": {
         "form": Form.create_test_time,
-        "state_text": "type test time #",
+        "state_text": "Введите продолжительность",
         "next_state": "create_test_deadline",
     },
     "create_test_deadline": {
         "form": Form.create_test_deadline,
-        "state_text": "type test deadline #",
+        "state_text": "Введите срок выполнения",
         "next_state": "create_test_attempts_number",
     },
     "create_test_attempts_number": {
         "form": Form.create_test_attempts_number,
-        "state_text": "type test attempts number #",
+        "state_text": "Введите число попыток",
         "next_state": "create_test_save_with_additions",
     },
 }
@@ -114,7 +114,8 @@ class Validations:
     @staticmethod
     async def validate_test_title(message: Message, text: str):
         if not re.fullmatch(ValidationPatterns.TITLE, text.strip()):
-            await message.answer(text="Название может содержать буквы, цифры и пробелы. Пожалуйста, попробуйте еще раз:")
+            await message.answer(
+                text="Название может содержать буквы, цифры и пробелы. Пожалуйста, попробуйте еще раз:")
             return None
 
         return text.strip()
@@ -122,7 +123,8 @@ class Validations:
     @staticmethod
     async def validate_test_time(message: Message, text: str):
         if not re.fullmatch(ValidationPatterns.TIME, text.strip()):
-            await message.answer(text="Продолжительность в минутах может содержать только цифры. Пожалуйста, попробуйте еще раз:")
+            await message.answer(
+                text="Продолжительность в минутах может содержать только цифры. Пожалуйста, попробуйте еще раз:")
             return None
 
         return text.strip()
@@ -200,7 +202,7 @@ async def welcome_message(message: types.Message, command: CommandObject) -> Non
                 # todo maybe we wanna consider that user is not author of this classroom
                 await message.bot.send_message(
                     message.from_user.id,
-                    text="Вы уже состоите в данной подборке",
+                    text="Вы уже состоите в этой группе",
                     reply_markup=get_go_to_main_menu_keyboard())
 
                 return
@@ -231,7 +233,7 @@ async def welcome_message(message: types.Message, command: CommandObject) -> Non
                 # todo maybe we wanna consider that user is not author of this test
                 await message.bot.send_message(
                     message.from_user.id,
-                    text="Вам уже доступно прохождение данного теста",
+                    text="Вам уже доступно прохождение данного опроса",
                     reply_markup=get_go_to_main_menu_keyboard())
 
                 return
@@ -350,7 +352,7 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
 
     elif CURRENT_TESTS.has_that_callback(call.data):
         await call.bot.edit_message_text(
-            "choose test types",
+            "Какие опросы показать?",
             call.from_user.id,
             call.message.message_id,
             reply_markup=get_current_tests_menu_keyboard())
@@ -537,7 +539,7 @@ async def handle_edit_classroom_query(call: types.CallbackQuery):
     classroom_id = get_test_id_or_classroom_id_from_callback(call.data)
     classroom = await db_manager.get_classroom_by_id(classroom_id)
     await call.bot.edit_message_text(
-        f"Изменить подборку \"{classroom.title}\"",
+        f"Изменить группу \"{classroom.title}\"",
         call.from_user.id,
         call.message.message_id,
         reply_markup=get_edit_classroom_keyboard(classroom))
@@ -594,7 +596,7 @@ async def handle_spec_current_classroom_query(call: types.CallbackQuery):
         return
     author = await db_manager.get_user_by_id(classroom.author_id)
 
-    msg = f"Название подборки: {classroom.title}\n" \
+    msg = f"Название группы: {classroom.title}\n" \
           f"Автор: {author.name} - @{author.username}\n"
 
     await call.bot.edit_message_text(msg, call.from_user.id, call.message.message_id,
@@ -604,9 +606,9 @@ async def handle_spec_current_classroom_query(call: types.CallbackQuery):
 async def handle_current_classrooms_query(call: types.CallbackQuery) -> None:
     current_classrooms = await db_manager.get_current_classrooms_by_user_id(call.from_user.id)
     if len(current_classrooms) == 0:
-        text = "Список подборок пуст"
+        text = "Список групп пуст"
     else:
-        text = "Ваши подборки:"
+        text = "Ваши группы:"
     await call.bot.edit_message_text(text, call.from_user.id, call.message.message_id,
                                      reply_markup=get_classrooms_keyboard(current_classrooms, 'current'))
 
@@ -615,7 +617,7 @@ async def handle_delete_classroom_query(call: types.CallbackQuery) -> None:
     classroom_id = get_test_id_or_classroom_id_from_callback(call.data)
     classroom = await db_manager.get_classroom_by_id(classroom_id)
     await call.bot.edit_message_text(
-        f"Вы уверены, что хотите удалить подборку \"{classroom.title}\"?",
+        f"Вы уверены, что хотите удалить группу \"{classroom.title}\"?",
         call.from_user.id,
         call.message.message_id,
         reply_markup=get_delete_entity_confirm_keyboard(Entity.CLASSROOM, classroom_id))
@@ -629,7 +631,7 @@ async def handle_delete_test_query(call: types.CallbackQuery) -> None:
     test_id = get_test_id_or_classroom_id_from_callback(call.data)
     test = await db_manager.get_test_by_id(test_id)
     await call.bot.edit_message_text(
-        f"Вы уверены, что хотите удалить тест \"{test.title}\"?",
+        f"Вы уверены, что хотите удалить опрос \"{test.title}\"?",
         call.from_user.id,
         call.message.message_id,
         reply_markup=get_delete_entity_confirm_keyboard(Entity.TEST, test_id))
@@ -667,10 +669,10 @@ async def handle_spec_created_classroom_query(call: types.CallbackQuery):
     classroom_id = get_test_id_or_classroom_id_from_callback(call.data)
     classroom = await db_manager.get_classroom_by_id(classroom_id)
     if not classroom:
-        await call.bot.edit_message_text("Подборка удалена", call.from_user.id, call.message.message_id,
+        await call.bot.edit_message_text("Группа удалена", call.from_user.id, call.message.message_id,
                                          reply_markup=get_go_to_main_menu_keyboard())
         return
-    await call.bot.edit_message_text(f"Название подборки: {classroom.title}\n"
+    await call.bot.edit_message_text(f"Название группы: {classroom.title}\n"
                                      f"Ссылка: {generate_link(Entity.CLASSROOM, classroom.uuid)}",
                                      call.from_user.id, call.message.message_id,
                                      reply_markup=get_spec_classroom_keyboard(classroom))
@@ -690,16 +692,16 @@ async def send_test_to_classroom_participants(test_id: int, classroom_id: int, b
         await db_manager.add_user_to_test_participants(test_id, participant.id)
         await bot.send_message(
             participant.id,
-            text="Доступен новый тест"
+            text="Доступен новый опрос"
         )
 
 
 async def handle_share_test_link_to_classroom_query(call: types.CallbackQuery) -> None:
     classrooms = await db_manager.get_classrooms_by_author_id(call.from_user.id)
     if len(classrooms) == 0:
-        text = "Список подборок пуст. Вы можете создать новую."
+        text = "Список групп пуст. Вы можете создать новую."
     else:
-        text = "Выберите подборку:"
+        text = "Выберите группу:"
     await call.bot.edit_message_text(text, call.from_user.id, call.message.message_id,
                                      reply_markup=get_classrooms_keyboard(classrooms))
     # await call.bot.answer_callback_query(call.id)
@@ -709,10 +711,11 @@ async def handle_share_test_link_query(call: types.CallbackQuery) -> None:
     test_id = get_test_id_or_classroom_id_from_callback(call.data)
     test = await db_manager.get_test_by_id(test_id)
     created_classrooms = await db_manager.get_classrooms_by_author_id(call.from_user.id)
-    await call.bot.edit_message_text(f"Ссылка: {generate_link(Entity.TEST, test.uuid)}\nВыберите подборку, чтобы отправить ссылку",
-                                     call.from_user.id, call.message.message_id,
-                                     reply_markup=get_share_test_link_to_classroom_keyboard(test_id,
-                                                                                            created_classrooms))
+    await call.bot.edit_message_text(
+        f"Ссылка: {generate_link(Entity.TEST, test.uuid)}\nВыберите группу, чтобы отправить ссылку",
+        call.from_user.id, call.message.message_id,
+        reply_markup=get_share_test_link_to_classroom_keyboard(test_id,
+                                                               created_classrooms))
 
 
 def generate_link(type_: Entity, uuid: int) -> str:
@@ -727,9 +730,9 @@ async def handle_current_ended_or_with_no_attempts_tests_query(call: types.Callb
     current_ended_or_with_no_attempts_tests = await db_manager.get_current_ended_or_with_no_attempts_tests_by_user_id(
         call.from_user.id)
     if len(current_ended_or_with_no_attempts_tests) == 0:
-        text = "У Вас нет завершенных тестов или автор их удалил"
+        text = "У Вас нет завершенных опросов или автор их удалил"
     else:
-        text = "Завершенные тесты"
+        text = "Завершенные опросы"
     await call.bot.edit_message_text(text, call.from_user.id, call.message.message_id,
                                      reply_markup=get_current_tests_keyboard(current_ended_or_with_no_attempts_tests))
 
@@ -738,20 +741,27 @@ async def handle_current_available_test_with_attempts_query(call: types.Callback
     current_available_test_with_attempts = await db_manager.get_current_available_test_with_attempts_by_user_id(
         call.from_user.id)
     if len(current_available_test_with_attempts) == 0:
-        text = "Список тестов пуст"
+        text = "Список опросов пуст"
     else:
-        text = "Доступные тесты:"
+        text = "Доступные опросы:"
     await call.bot.edit_message_text(text, call.from_user.id, call.message.message_id,
                                      reply_markup=get_current_tests_keyboard(current_available_test_with_attempts))
 
 
 def get_spec_test_info_message(test: Test) -> str:
-    msg = f"""<b>Название теста:</b> {test.title}
-    <b>Время прохождения:</b> {test.time} min
-    <b>Дедлайн:</b> {test.deadline}
-    <b>Число попыток:</b> {test.attempts_number}
-    <b>Статус теста:</b> {test.status_set_by_author} {get_emoji_test_status(test.status_set_by_author)}
-    <b>Ссылка на тест:</b> {test.link}"""
+    inf_sign = "∞"
+    time_ = inf_sign if test.time == -1 else test.time
+    deadline = inf_sign if test.deadline == -1 else test.deadline  # TODO ts -> datetime
+    attempts = inf_sign if test.attempts_number == -1 else test.attempts_number
+    status = "доступен" if test.status_set_by_author == TestStatus.AVAILABLE.name else "недоступен"
+
+    msg = f"""
+    <b>Название:</b> {test.title}
+    <b>Время прохождения:</b> {time_} min
+    <b>Дедлайн:</b> {deadline}
+    <b>Число попыток:</b> {attempts}
+    <b>Статус:</b> {status} {get_emoji_test_status(test.status_set_by_author)}
+    <b>Ссылка на опрос:</b> {test.link}"""
     return msg
 
 
@@ -919,7 +929,7 @@ async def type_edit_test(message: Message, state: FSMContext):
         )
         await state.clear()
         await message.answer(
-            "Создание теста прервано.",
+            "Создание опроса прервано.",
             reply_markup=get_test_edit_keyboard(data["edit_test_id"])
         )
         return
@@ -933,9 +943,9 @@ async def type_edit_test(message: Message, state: FSMContext):
 
 
 async def edit_test_finish(message: Message, state: FSMContext, test_id: int):
-    await message.answer("Тест создан!")
+    await message.answer("Опрос создан!")
     await message.answer(
-        "Создание теста завершено.",
+        "Создание опроса завершено.",
         reply_markup=get_test_edit_keyboard(test_id)
     )
     await state.clear()
@@ -943,7 +953,7 @@ async def edit_test_finish(message: Message, state: FSMContext, test_id: int):
 
 async def handle_create_test_query(call: types.CallbackQuery, state: FSMContext) -> None:
     await call.bot.edit_message_text(
-        "Введите ссылку на тест",
+        "Введите ссылку на опрос",
         call.from_user.id,
         call.message.message_id,
     )
@@ -976,7 +986,7 @@ async def type_create_test(message: Message, state: FSMContext):
         tests = await db_manager.get_tests_by_author_id(message.from_user.id)
         await state.clear()
         await message.answer(
-            "Создание теста прервано.",
+            "Создание опроса прервано.",
             reply_markup=get_created_tests_keyboard(tests)
         )
         return
@@ -985,7 +995,7 @@ async def type_create_test(message: Message, state: FSMContext):
     await state.update_data(test_meta_data=meta_data)
 
     await message.answer(
-        "Вы хотите добавить дополнительные настройки к тесту?",
+        "Вы хотите добавить дополнительные настройки к опросу?",
         reply_markup=get_created_test_additionals_keyboard()
     )
 
@@ -1031,7 +1041,7 @@ async def handle_save_test_query(call: types.CallbackQuery, state: FSMContext):
 async def handle_save_test_with_additionals_query(call: types.CallbackQuery, state: FSMContext):
     await state.set_state(Form.create_test_title)
     await call.bot.send_message(
-        text="Введите название теста",
+        text="Введите название опроса",
         chat_id=call.message.chat.id,
         reply_markup=get_created_test_cancel_addition_keyboard(skip_to_state="create_test_time")
     )
@@ -1063,7 +1073,7 @@ async def type_create_test(message: Message, state: FSMContext):
     await state.update_data(test_title=test_title)
     await state.set_state(Form.create_test_time)
     await message.answer(
-        text="Введите продолжительность теста в минутах",
+        text="Введите продолжительность опроса в минутах",
         reply_markup=get_created_test_cancel_addition_keyboard(skip_to_state="create_test_deadline")
     )
 
@@ -1187,12 +1197,12 @@ async def create_test_save_with_additions(state: FSMContext, message: Message = 
 
     if not call:
         await message.answer(
-            text="Создание теста завершено",
+            text="Создание опроса завершено",
             reply_markup=get_created_tests_keyboard(tests)
         )
     else:
         await call.bot.send_message(
-            text="Создание теста завершено",
+            text="Создание опроса завершено",
             chat_id=call.message.chat.id,
             reply_markup=get_created_tests_keyboard(tests)
         )
@@ -1200,7 +1210,7 @@ async def create_test_save_with_additions(state: FSMContext, message: Message = 
 
 async def handle_create_classroom_query(call: types.CallbackQuery, state: FSMContext) -> None:
     await call.bot.edit_message_text(
-        "Введите название подборки",
+        "Введите название группы",
         call.from_user.id,
         call.message.message_id,
     )
@@ -1210,9 +1220,9 @@ async def handle_create_classroom_query(call: types.CallbackQuery, state: FSMCon
 async def handle_authors_classrooms_query(call: types.CallbackQuery) -> None:
     authors_classrooms = await db_manager.get_classrooms_by_author_id(call.from_user.id)
     if len(authors_classrooms) == 0:
-        text = "Список подборок пуст. Вы можете создать новую."
+        text = "Список групп пуст. Вы можете создать новую."
     else:
-        text = "Ваши подборки:"
+        text = "Ваши группы:"
     await call.bot.edit_message_text(text, call.from_user.id, call.message.message_id,
                                      reply_markup=get_classrooms_keyboard(authors_classrooms))
 
@@ -1221,9 +1231,9 @@ async def handle_authors_tests_query(call: types.CallbackQuery, state: FSMContex
     await state.clear()
     authors_tests = await db_manager.get_tests_by_author_id(call.from_user.id)
     if len(authors_tests) == 0:
-        text = "Список тестов пуст. Вы можете создать новый."
+        text = "Список опросов пуст. Вы можете создать новый."
     else:
-        text = "Ваши тесты:"
+        text = "Ваши опросы:"
 
     await call.bot.edit_message_text(
         text=text,
