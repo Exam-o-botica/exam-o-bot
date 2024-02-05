@@ -14,9 +14,10 @@ from src.examobot.task_translator.task_keyboards import *
 
 class Question(ABC):
     @staticmethod
-    async def get_options_text(options: list[str]):
-        msg = "Варианты ответа:\n"
-        for ind, value in enumerate(options):
+    async def get_text_with_options(task: Task, options: list[str]):
+        text = task.text
+        msg = text + "\n\nВарианты ответа:\n"
+        for ind, value in enumerate(options, start=1):
             msg += f'<b>Вариант {ind}</b>: {value}\n'
         return msg
 
@@ -148,7 +149,6 @@ class OneChoiceQuestion(Question):
         if not options:
             raise AssertionError("Expected answer options in this type of questions")
 
-        text = await Question.get_options_text(options)
         answer = await db_manager.get_answer_by_task_id_and_user_id(task.id, user_id)
         chosen_variant = -1 \
             if not answer or answer.status == AnswerStatus.UNCHECKED \
@@ -163,6 +163,7 @@ class OneChoiceQuestion(Question):
             ),  # todo maybe incorrect media type
             messages_to_delete.append(msg1)
 
+        text = await Question.get_text_with_options(task, options)
         msg2 = await bot.send_message(
             chat_id=user_id,
             text=text,
@@ -206,8 +207,6 @@ class MultipleChoiceQuestion(Question):
         if not options:
             raise AssertionError("Expected answer options in this type of questions")
 
-        text = await Question.get_options_text(options)
-
         answer: Answer = await db_manager.get_answer_by_task_id_and_user_id(task.id, user_id)
         chosen_options = [] \
             if not answer or answer.status == AnswerStatus.UNCHECKED \
@@ -221,6 +220,7 @@ class MultipleChoiceQuestion(Question):
             )
             messages_to_delete.append(msg1)
 
+        text = await Question.get_text_with_options(task, options)
         msg2 = await bot.send_message(
             chat_id=user_id,
             text=text,
