@@ -12,7 +12,7 @@ from aiogram.filters import CommandStart, CommandObject
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 
-from src.examobot.form_handlers.exceptions import JSONParseError, URLFailedCreationError, BadRequestError, HTMLParseError, \
+from examobot.form_handlers.exceptions import JSONParseError, URLFailedCreationError, BadRequestError, HTMLParseError, \
     TestCompleteFailError
 from src.examobot.bot.consts import *
 from src.examobot.bot.examobot_tasks import tasks_router, handle_one_choice_question_option_query, \
