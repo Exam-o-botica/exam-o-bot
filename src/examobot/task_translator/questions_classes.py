@@ -80,7 +80,7 @@ class Question(ABC):
             this method is needed to convert answer to string representation of answer
             to use in the link that we send to google form back
         """
-        pass
+        return answer.answer_data
 
 
 class StringOrTextQuestion(Question):
@@ -134,8 +134,7 @@ class StringOrTextQuestion(Question):
 
     @staticmethod
     def convert_answer_to_string_repr(answer: Answer) -> str:
-        pass
-        # todo
+        return answer.answer_data
 
 
 class OneChoiceQuestion(Question):
@@ -262,4 +261,4 @@ class MultipleChoiceQuestion(Question):
 
     @staticmethod
     def convert_answer_to_string_repr(answer: Answer) -> str:
-        pass
+        return "wat"

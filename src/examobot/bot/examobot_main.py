@@ -408,6 +408,7 @@ async def handle_end_test_query(call: CallbackQuery):
     user_id = call.from_user.id
     user = await db_manager.get_user_by_id(user_id)
     cur_test_id = user.current_test_id
+    cur_task_id = user.current_task_id
 
     google_form_answers = dict()
     answers = await db_manager.get_answers_by_test_id_and_user_id(test_id=cur_test_id, user_id=user_id)
@@ -416,13 +417,16 @@ async def handle_end_test_query(call: CallbackQuery):
         question = QuestionType[task.task_type].value
         google_form_answers[task.google_form_question_id] = question.convert_answer_to_string_repr(answer)
 
+    await db_manager.delete_answers_by_test_id_and_user_id(test_id=cur_test_id, user_id=user_id)
+    # TODO Add answer deletion
     test = await db_manager.get_test_by_id(cur_test_id)
     answer_sender = FormAnswerSender()
     try:
-        await answer_sender.send_answer_metadata(test.meta_data, google_form_answers)
+        # await answer_sender.send_answer_metadata(test.meta_data, google_form_answers)
         await call.bot.edit_message_text(
             text="test successfully finished",
             chat_id=call.from_user.id,
+            message_id=call.message.message_id,
             reply_markup=get_back_to_main_menu_keyboard()
         )
     except JSONParseError:
@@ -431,7 +435,9 @@ async def handle_end_test_query(call: CallbackQuery):
         await send_end_test_error(call, test, text="unfortunately, some error with test data occurred.")
     except BadRequestError:
         await send_end_test_error(call, test, text="unfortunately, some error with connection occurred.")
-    except (HTMLParseError, TestCompleteFailError):
+    except HTMLParseError:
+        await send_end_test_error(call, test, text="unfortunately, some error occurred.")
+    except TestCompleteFailError:
         await send_end_test_error(call, test, text="unfortunately, some error occurred.")
 
 

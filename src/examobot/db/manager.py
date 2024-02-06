@@ -2,7 +2,7 @@ import asyncio
 import os
 import uuid
 
-from sqlalchemy import select, and_, or_, update
+from sqlalchemy import select, and_, or_, update, delete
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncEngine
 
 from src.examobot.db.tables import Test, Task, User, Classroom, Base, UserClassroomParticipation, \
@@ -273,10 +273,10 @@ class DBManager:
             return answer
 
     async def get_answers_by_test_id_and_user_id(self, test_id: int, user_id: int):
-        query = select(Answer).where(
+        query = select(Answer).join(Task).where(
             and_(
                 Answer.user_id == user_id,
-                Answer.task_id == test_id
+                Task.test_id == test_id
             )
         )
 
@@ -284,6 +284,14 @@ class DBManager:
             result = await session.execute(query)
             answer = result.scalars().all()
             return answer
+
+    async def delete_answers_by_test_id_and_user_id(self, test_id: int, user_id: int):
+        answers = await self.get_answers_by_test_id_and_user_id(test_id, user_id)
+        async with self.session_maker() as session:
+            for a in answers:
+                await session.delete(a)
+
+            await session.commit()
 
     async def add_answer(self, answer: Answer):
         async with self.session_maker() as session:

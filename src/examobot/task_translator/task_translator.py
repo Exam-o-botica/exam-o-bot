@@ -20,7 +20,7 @@ class Translator:
     @staticmethod
     def get_form_title(json_string: str) -> str:
         json_form = json.loads(json_string)
-        return json_form['info']['title']
+        return json_form['info']['title']  # TODO
 
     @staticmethod
     def may_have_options(task_type_name: str):
