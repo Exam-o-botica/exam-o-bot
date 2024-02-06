@@ -251,12 +251,12 @@ def go_to_previous_menu_keyboard(button: Button, parameters=None):
 def get_current_test_tasks_keyboard(tasks: list[Task]):
     tasks_list = [
         [
-            SPEC_CURRENT_TEST_TASK.get_button(new_text=f"question # {ind}", parameters=[task.id])
+            SPEC_CURRENT_TEST_TASK.get_button(new_text=f"Вопрос {ind}", parameters=[task.id])
         ] for ind, task in enumerate(tasks, start=1)
     ]
 
     inline_keyboard = [
         *tasks_list,
-        [END_TEST.get_button(new_text="finish test")],
+        [END_TEST.get_button(new_text="Закончить тест")],
     ]
     return types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)

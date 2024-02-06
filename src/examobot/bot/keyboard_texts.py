@@ -4,7 +4,6 @@ from aiogram.types import InlineKeyboardButton
 
 from src.examobot.bot.Button import Button
 
-
 GO_TO_MAIN_MENU_TEXT = 'Главное меню'
 GO_TO_PREVIOUS_MENU_TEXT = 'Назад'
 CANCEL_TEXT = 'Отмена'
@@ -17,45 +16,45 @@ DELETE_ENTITY_CONFIRM = Button(name='DELETE_ENTITY_CONFIRM', text='Удалит�
 
 # Classrooms
 
-AUTHORS_CLASSROOMS = Button(name='AUTHORS_CLASSROOMS', text='Мои подборки')
+AUTHORS_CLASSROOMS = Button(name='AUTHORS_CLASSROOMS', text='Мои группы')
 
-SPEC_CREATED_CLASSROOM = Button(name='SPEC_CREATED_CLASSROOM', text='Выбрать подборку')
+SPEC_CREATED_CLASSROOM = Button(name='SPEC_CREATED_CLASSROOM', text='Выбрать группу')
 
-CREATE_CLASSROOM = Button(name='CREATE_CLASSROOM', text='Создать подборку')
+CREATE_CLASSROOM = Button(name='CREATE_CLASSROOM', text='Создать группу')
 
-DELETE_CLASSROOM = Button(name='DELETE_CLASSROOM', text='Удалить подборку')
+DELETE_CLASSROOM = Button(name='DELETE_CLASSROOM', text='Удалить группу')
 
 SHOW_CLASSROOM_PARTICIPANTS = Button(name='SHOW_CLASSROOM_PARTICIPANTS', text='Показать участников')
 
-EDIT_CLASSROOM = Button(name='EDIT_CLASSROOM', text='Изменить подборку')
+EDIT_CLASSROOM = Button(name='EDIT_CLASSROOM', text='Изменить группу')
 
-EDIT_CLASSROOM_TITLE = Button(name='EDIT_CLASSROOM_TITLE', text='Изменить название подборки')
+EDIT_CLASSROOM_TITLE = Button(name='EDIT_CLASSROOM_TITLE', text='Изменить название группы')
 
 # created Tests
 
-AUTHORS_TESTS = Button(name='AUTHORS_TESTS', text='Мои тесты')
+AUTHORS_TESTS = Button(name='AUTHORS_TESTS', text='Мои опросы')
 
-SPEC_CREATED_TEST = Button(name='SPEC_CREATED_TEST', text='Выбрать тест')
+SPEC_CREATED_TEST = Button(name='SPEC_CREATED_TEST', text='Выбрать опрос')
 
-CREATE_TEST = Button(name='CREATE_TEST', text='Создать тест')
+CREATE_TEST = Button(name='CREATE_TEST', text='Создать опрос')
 
-SAVE_TEST = Button(name='SAVE_TEST', text='Сохранить тест')
+SAVE_TEST = Button(name='SAVE_TEST', text='Сохранить опрос')
 
 SAVE_TEST_WITH_ADDITIONALS = Button(name='SAVE_TEST_WITH_ADDITIONALS', text='Добавить настройки')
 
 CANCEL_ADDITION = Button(name='CANCEL_ADDITION', text='Пропустить')
 
-CLOSE_TEST = Button(name='CLOSE_TEST', text='Закрыть тест')
+CLOSE_TEST = Button(name='CLOSE_TEST', text='Закрыть опрос')
 
-OPEN_TEST = Button(name='OPEN_TEST', text='Открыть тест')
+OPEN_TEST = Button(name='OPEN_TEST', text='Открыть опрос')
 
-REFRESH_TEST_DATA = Button(name='REFRESH_TEST_DATA', text='Обновить данные теста')
+REFRESH_TEST_DATA = Button(name='REFRESH_TEST_DATA', text='Обновить данные опроса')
 
-DELETE_TEST = Button(name='DELETE_TEST', text='Удалить тест')
+DELETE_TEST = Button(name='DELETE_TEST', text='Удалить опрос')
 
-EDIT_TEST = Button(name='EDIT_TEST', text='Изменить тест')
+EDIT_TEST = Button(name='EDIT_TEST', text='Изменить опрос')
 
-EDIT_TEST_TITLE = Button(name='EDIT_TEST_TITLE', text='Изменить название теста')
+EDIT_TEST_TITLE = Button(name='EDIT_TEST_TITLE', text='Изменить название опроса')
 
 EDIT_TEST_TIME = Button(name='EDIT_TEST_TIME', text='Изменить время')
 
@@ -67,24 +66,24 @@ EDIT_TEST_LINK = Button(name='EDIT_TEST_LINK', text='Изменить ссылк
 
 SHARE_TEST_LINK = Button(name='SHARE_TEST_LINK', text='Поделить ссылкой')
 
-SHARE_TEST_LINK_TO_CLASSROOM = Button(name='SHARE_TEST_LINK_TO_CLASSROOM', text='Отправить тест участникам')
+SHARE_TEST_LINK_TO_CLASSROOM = Button(name='SHARE_TEST_LINK_TO_CLASSROOM', text='Отправить опрос участникам')
 
 SPEC_SHARE_TEST_LINK_TO_CLASSROOM = Button(name='SPEC_SHARE_TEST_LINK_TO_CLASSROOM',
-                                           text='specific share link to classroom')
+                                           text='Выбранная ссылка на группу')
 
 ### FOR PARTICIPANTS ###
 
-CURRENT_CLASSROOMS = Button(name='CURRENT_CLASSROOMS', text='Доступные подборки')
+CURRENT_CLASSROOMS = Button(name='CURRENT_CLASSROOMS', text='Доступные группы')
 
-SPEC_CURRENT_CLASSROOM = Button(name='SPEC_CURRENT_CLASSROOM', text='specific current classroom')
+SPEC_CURRENT_CLASSROOM = Button(name='SPEC_CURRENT_CLASSROOM', text='Выбранная группа')
 
 # current Classrooms
 
 # current tests
 
-CURRENT_TESTS = Button(name='CURRENT_TESTS', text='Доступные тесты')
+CURRENT_TESTS = Button(name='CURRENT_TESTS', text='Доступные опросы')
 
-SPEC_CURRENT_TEST = Button(name='SPEC_CURRENT_TEST', text='specific current test')
+SPEC_CURRENT_TEST = Button(name='SPEC_CURRENT_TEST', text='Выбранный опрос')
 
 START_CURRENT_TEST = Button(name='START_CURRENT_TEST', text='Начать')
 
@@ -92,7 +91,6 @@ CURRENT_ENDED_OR_WITH_NO_ATTEMPTS_TESTS = Button(
     name='CURRENT_ENDED_OR_WITH_NO_ATTEMPTS_TESTS', text='Завершенные')
 
 CURRENT_AVAILABLE_TEST_WITH_ATTEMPTS = Button(
-    name='CURRENT_AVAILABLE_TEST_WITH_ATTEMPTS', text='Доступные опросы')
+    name='CURRENT_AVAILABLE_TEST_WITH_ATTEMPTS', text='Доступные')
 
-SPEC_CURRENT_TEST_TASK = Button(name='SPEC_CURRENT_TEST_TASK', text='question')
-
+SPEC_CURRENT_TEST_TASK = Button(name='SPEC_CURRENT_TEST_TASK', text='Вопрос')

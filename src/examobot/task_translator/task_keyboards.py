@@ -25,7 +25,7 @@ def get_one_choice_keyboard(task: Task, options_num: int, chosen_answer: int | N
     options = [
         [
             ONE_CHOICE_QUESTION_OPTION.get_button(
-                new_text=f"вариант {i}{' 📌' if i == chosen_answer else ''}",
+                new_text=f"Вариант {i}{' 📌' if i == chosen_answer else ''}",
                 parameters=[task.id, i]
             )
         ]
