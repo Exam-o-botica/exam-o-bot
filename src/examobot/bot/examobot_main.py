@@ -12,7 +12,7 @@ from aiogram.filters import CommandStart, CommandObject
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 
-from examobot.form_handlers.exceptions import JSONParseError, URLFailedCreationError, BadRequestError, HTMLParseError, \
+from src.examobot.form_handlers.exceptions import JSONParseError, URLFailedCreationError, BadRequestError, HTMLParseError, \
     TestCompleteFailError
 from src.examobot.bot.consts import *
 from src.examobot.bot.examobot_tasks import tasks_router, handle_one_choice_question_option_query, \
@@ -1248,18 +1248,17 @@ async def handle_authors_tests_query(call: types.CallbackQuery, state: FSMContex
     )
 
 
-async def main() -> None:
-    # with open(MAIN_LOG_FILE, "a") as log:
-    #     if LOG_IN_FILE:
-    #         logging.basicConfig(level=logging.INFO, stream=log)
-    #     else:
-    #         logging.basicConfig(level=logging.INFO, stream=sys.stdout)
-
-    bot = Bot(token=TOKEN, parse_mode="HTML")
-
-    await dp.start_polling(bot)
-
-
-if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO, stream=sys.stdout)
-    asyncio.run(main())
+# async def main() -> None:
+#     # with open(MAIN_LOG_FILE, "a") as log:
+#     #     if LOG_IN_FILE:
+#     #         logging.basicConfig(level=logging.INFO, stream=log)
+#     #     else:
+#     #         logging.basicConfig(level=logging.INFO, stream=sys.stdout)
+#
+#     bot = Bot(token=TOKEN, parse_mode="HTML")
+#     await dp.start_polling(bot)
+#
+#
+# if __name__ == '__main__':
+#     logging.basicConfig(level=logging.INFO, stream=sys.stdout)
+#     asyncio.run(main())
