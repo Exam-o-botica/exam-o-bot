@@ -6,7 +6,7 @@ from aiogram import Bot
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine
 
 from src.examobot.bot.examobot_main import dp
-from src.examobot.definitions import TOKEN
+from examobot.definitions import TOKEN
 
 
 class EngineManager:
