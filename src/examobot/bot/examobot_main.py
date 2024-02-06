@@ -418,13 +418,12 @@ async def handle_end_test_query(call: CallbackQuery):
         google_form_answers[task.google_form_question_id] = question.convert_answer_to_string_repr(answer)
 
     await db_manager.delete_answers_by_test_id_and_user_id(test_id=cur_test_id, user_id=user_id)
-    # TODO Add answer deletion
     test = await db_manager.get_test_by_id(cur_test_id)
     answer_sender = FormAnswerSender()
     try:
         # await answer_sender.send_answer_metadata(test.meta_data, google_form_answers)
         await call.bot.edit_message_text(
-            text="test successfully finished",
+            text="Тест завершён",
             chat_id=call.from_user.id,
             message_id=call.message.message_id,
             reply_markup=get_back_to_main_menu_keyboard()

@@ -31,7 +31,7 @@ async def get_task_safe(
     task = await db_manager.get_task_by_id(task_id)
     if not task:
         await bot.edit_message_text(
-            text="this test was deleted by author",
+            text="Тест был удален",
             chat_id=chat_id,
             message_id=message_id,
             reply_markup=error_reply_markup
@@ -121,7 +121,7 @@ async def handle_question(
     if not test:
         return
 
-    await bot.send_message(text="answer saved", chat_id=user_id)
+    await bot.send_message(text="Ответ сохранён", chat_id=user_id)
     await show_menu_with_tasks(
         cur_test_id=cur_test_id,
         bot=bot,

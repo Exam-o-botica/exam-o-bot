@@ -50,6 +50,7 @@ def get_classrooms_keyboard(classrooms: list[Classroom], classroom_type: str = '
         create_classroom_btn = []
     else:
         raise ValueError(f'Unknown classroom type: {classroom_type}, expected "created" or "current"')
+        raise ValueError(f'Unknown classroom type: {classroom_type}, expected "created" or "current"')
 
     classrooms_list = [
         [btn.get_button(new_text=clm.title, parameters=[clm.id])] for clm in classrooms
