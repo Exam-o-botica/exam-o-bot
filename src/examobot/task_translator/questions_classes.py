@@ -4,9 +4,9 @@ from typing import Any, Callable
 from aiogram import Bot
 from aiogram.types import Message, CallbackQuery
 
-from src.examobot.db.manager import db_manager
-from src.examobot.db.tables import Answer, AnswerStatus
-from src.examobot.task_translator.task_keyboards import *
+from examobot.db.manager import db_manager
+from examobot.db.tables import Answer, AnswerStatus
+from examobot.task_translator.task_keyboards import *
 
 
 # from src.examobot.bot import db_manager

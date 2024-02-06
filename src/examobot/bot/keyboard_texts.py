@@ -2,7 +2,7 @@ from typing import Any, Optional
 
 from aiogram.types import InlineKeyboardButton
 
-from src.examobot.bot.Button import Button
+from examobot.bot.Button import Button
 
 GO_TO_MAIN_MENU_TEXT = 'Главное меню'
 GO_TO_PREVIOUS_MENU_TEXT = 'Назад'

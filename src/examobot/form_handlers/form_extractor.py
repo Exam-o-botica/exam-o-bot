@@ -8,7 +8,7 @@ from googleapiclient import errors
 from httplib2 import Http
 from oauth2client import client, tools
 
-from src.examobot.definitions import GOOGLE_CLIENT_SECRETS, TOKEN_STORE, SCOPES, DISCOVERY_DOC
+from examobot.definitions import GOOGLE_CLIENT_SECRETS, TOKEN_STORE, SCOPES, DISCOVERY_DOC
 
 socket.setdefaulttimeout(120)
 

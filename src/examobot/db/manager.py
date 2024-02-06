@@ -5,7 +5,7 @@ import uuid
 from sqlalchemy import select, and_, or_, update, delete
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncEngine
 
-from src.examobot.db.tables import Test, Task, User, Classroom, Base, UserClassroomParticipation, \
+from examobot.db.tables import Test, Task, User, Classroom, Base, UserClassroomParticipation, \
     UserTestParticipation, UserTestParticipationStatus, TestStatus, Answer
 
 DATABASE_URI = os.getenv("DATABASE_URI")

@@ -1,11 +1,11 @@
 from aiogram import Router, Bot
 from aiogram.types import Message, InlineKeyboardMarkup, CallbackQuery
 
-from src.examobot.bot.keyboards import get_go_to_main_menu_keyboard, get_current_test_tasks_keyboard
-from src.examobot.db.manager import db_manager
-from src.examobot.db.tables import Task, Test
-from src.examobot.task_translator.QuestionType import QuestionType
-from src.examobot.task_translator.questions_classes import Question, OneChoiceQuestion, MultipleChoiceQuestion
+from examobot.bot.keyboards import get_go_to_main_menu_keyboard, get_current_test_tasks_keyboard
+from examobot.db.manager import db_manager
+from examobot.db.tables import Task, Test
+from examobot.task_translator.QuestionType import QuestionType
+from examobot.task_translator.questions_classes import Question, OneChoiceQuestion, MultipleChoiceQuestion
 
 tasks_router = Router(name="tasks_router")
 

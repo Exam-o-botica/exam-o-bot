@@ -12,17 +12,17 @@ from aiogram.filters import CommandStart, CommandObject
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 
-from src.examobot.form_handlers.exceptions import JSONParseError, URLFailedCreationError, BadRequestError, HTMLParseError, \
+from examobot.form_handlers.exceptions import JSONParseError, URLFailedCreationError, BadRequestError, HTMLParseError, \
     TestCompleteFailError
-from src.examobot.bot.consts import *
-from src.examobot.bot.examobot_tasks import tasks_router, handle_one_choice_question_option_query, \
+from examobot.bot.consts import *
+from examobot.bot.examobot_tasks import tasks_router, handle_one_choice_question_option_query, \
     handle_multiple_choice_question_option_query
-from src.examobot.bot.keyboards import *
-from src.examobot.db.tables import *
-from src.examobot.form_handlers import *
-from src.examobot.task_translator.QuestionType import QuestionType
-from src.examobot.task_translator.questions_classes import *
-from src.examobot.task_translator.task_translator import Translator, TranslationError
+from examobot.bot.keyboards import *
+from examobot.db.tables import *
+from examobot.form_handlers import *
+from examobot.task_translator.QuestionType import QuestionType
+from examobot.task_translator.questions_classes import *
+from examobot.task_translator.task_translator import Translator, TranslationError
 
 TOKEN = os.getenv("EXAM_O_BOT_TOKEN")
 dp = Dispatcher()

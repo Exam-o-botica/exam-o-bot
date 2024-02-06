@@ -2,7 +2,7 @@ import asyncio
 import json
 from typing import Any
 
-from src.examobot.form_handlers.exceptions import *
+from examobot.form_handlers.exceptions import *
 import requests
 from lxml import html
 

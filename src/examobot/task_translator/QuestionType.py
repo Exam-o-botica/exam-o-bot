@@ -1,6 +1,6 @@
 import enum
 
-from src.examobot.task_translator.questions_classes import *
+from examobot.task_translator.questions_classes import *
 
 
 class QuestionType(enum.Enum):
