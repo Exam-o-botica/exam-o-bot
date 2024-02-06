@@ -191,7 +191,7 @@ class OneChoiceQuestion(Question):
 
     @staticmethod
     def convert_answer_to_string_repr(answer: Answer) -> str:
-        pass
+        return answer.answer_data
 
 
 class MultipleChoiceQuestion(Question):

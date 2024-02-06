@@ -12,7 +12,7 @@ from aiogram.filters import CommandStart, CommandObject
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 
-from examobot.form_handlers.exceptions import JSONParseError, URLFailedCreationError, BadRequestError, HTMLParseError, \
+from src.examobot.form_handlers.exceptions import JSONParseError, URLFailedCreationError, BadRequestError, HTMLParseError, \
     TestCompleteFailError
 from src.examobot.bot.consts import *
 from src.examobot.bot.examobot_tasks import tasks_router, handle_one_choice_question_option_query, \
@@ -421,7 +421,7 @@ async def handle_end_test_query(call: CallbackQuery):
     test = await db_manager.get_test_by_id(cur_test_id)
     answer_sender = FormAnswerSender()
     try:
-        # await answer_sender.send_answer_metadata(test.meta_data, google_form_answers)
+        await answer_sender.send_answer_metadata(test.meta_data, google_form_answers)
         await call.bot.edit_message_text(
             text="Тест завершён",
             chat_id=call.from_user.id,
