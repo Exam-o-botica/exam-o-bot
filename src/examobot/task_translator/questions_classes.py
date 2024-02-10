@@ -1,5 +1,6 @@
+import urllib.parse
 from abc import ABC, abstractmethod
-from typing import Any, Callable
+from typing import Any, Callable, Generator
 
 from aiogram import Bot
 from aiogram.types import Message, CallbackQuery
@@ -9,7 +10,19 @@ from examobot.db.tables import Answer, AnswerStatus
 from examobot.task_translator.task_keyboards import *
 
 
-# from src.examobot.bot import db_manager
+class Parameters:
+    def __init__(self) -> None:
+        self.values: list[tuple[str, str]] = []
+
+    def add_parameter(self, value: str, prefix: str = "entry") -> None:
+        self.values.append((prefix, value))
+
+    def __iter__(self):
+        return self
+
+    def __next__(self) -> Generator[tuple[str, str], None, None]:
+        yield from self.values
+        raise StopIteration
 
 
 class Question(ABC):
@@ -80,7 +93,7 @@ class Question(ABC):
             this method is needed to convert answer to string representation of answer
             to use in the link that we send to google form back
         """
-        return answer.answer_data
+        pass
 
 
 class StringOrTextQuestion(Question):
@@ -134,7 +147,8 @@ class StringOrTextQuestion(Question):
 
     @staticmethod
     def convert_answer_to_string_repr(answer: Answer) -> str:
-        return answer.answer_data
+        encoded = urllib.parse.quote_plus(answer.answer_data[0])
+        return encoded
 
 
 class OneChoiceQuestion(Question):
@@ -191,7 +205,8 @@ class OneChoiceQuestion(Question):
 
     @staticmethod
     def convert_answer_to_string_repr(answer: Answer) -> str:
-        return answer.answer_data
+        encoded = urllib.parse.quote_plus(answer.answer_data[0])
+        return encoded
 
 
 class MultipleChoiceQuestion(Question):
@@ -261,4 +276,5 @@ class MultipleChoiceQuestion(Question):
 
     @staticmethod
     def convert_answer_to_string_repr(answer: Answer) -> str:
-        return "wat"
+        encoded = [urllib.parse.quote_plus(ans) for ans in answer.answer_data]
+        return encoded

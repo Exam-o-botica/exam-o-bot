@@ -1,8 +1,6 @@
-import asyncio
-import logging
+import os
 import os
 import re
-import sys
 import time
 from datetime import datetime
 from pprint import pprint
@@ -12,14 +10,14 @@ from aiogram.filters import CommandStart, CommandObject
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 
-from examobot.form_handlers.exceptions import JSONParseError, URLFailedCreationError, BadRequestError, HTMLParseError, \
-    TestCompleteFailError
 from examobot.bot.consts import *
 from examobot.bot.examobot_tasks import tasks_router, handle_one_choice_question_option_query, \
     handle_multiple_choice_question_option_query
 from examobot.bot.keyboards import *
 from examobot.db.tables import *
 from examobot.form_handlers import *
+from examobot.form_handlers.exceptions import JSONParseError, URLFailedCreationError, BadRequestError, HTMLParseError, \
+    TestCompleteFailError
 from examobot.task_translator.QuestionType import QuestionType
 from examobot.task_translator.questions_classes import *
 from examobot.task_translator.task_translator import Translator, TranslationError
@@ -400,6 +398,7 @@ async def send_end_test_error(call: CallbackQuery, test: Test, text: str):
     await call.bot.edit_message_text(
         text=text,
         chat_id=call.from_user.id,
+        message_id=call.message.message_id,
         reply_markup=get_current_test_tasks_keyboard(tasks=tasks)
     )
 
@@ -415,7 +414,8 @@ async def handle_end_test_query(call: CallbackQuery):
     for answer in answers:
         task = await db_manager.get_task_by_id(task_id=answer.task_id)
         question = QuestionType[task.task_type].value
-        google_form_answers[task.google_form_question_id] = question.convert_answer_to_string_repr(answer)
+        decimal_google_question_id = int(task.google_form_question_id, 16)
+        google_form_answers[decimal_google_question_id] = question.convert_answer_to_string_repr(answer)
 
     await db_manager.delete_answers_by_test_id_and_user_id(test_id=cur_test_id, user_id=user_id)
     test = await db_manager.get_test_by_id(cur_test_id)
@@ -428,15 +428,20 @@ async def handle_end_test_query(call: CallbackQuery):
             message_id=call.message.message_id,
             reply_markup=get_back_to_main_menu_keyboard()
         )
-    except JSONParseError:
+    except JSONParseError as exception:
+        pprint(str(exception))
         await send_end_test_error(call, test, text="unfortunately, some error occurred. try send later")
-    except URLFailedCreationError:
+    except URLFailedCreationError as exception:
+        pprint(str(exception))
         await send_end_test_error(call, test, text="unfortunately, some error with test data occurred.")
-    except BadRequestError:
+    except BadRequestError as exception:
+        pprint(str(exception))
         await send_end_test_error(call, test, text="unfortunately, some error with connection occurred.")
-    except HTMLParseError:
+    except HTMLParseError as exception:
+        pprint(str(exception))
         await send_end_test_error(call, test, text="unfortunately, some error occurred.")
-    except TestCompleteFailError:
+    except TestCompleteFailError as exception:
+        pprint(str(exception))
         await send_end_test_error(call, test, text="unfortunately, some error occurred.")
 
 
@@ -1246,7 +1251,6 @@ async def handle_authors_tests_query(call: types.CallbackQuery, state: FSMContex
         message_id=call.message.message_id,
         reply_markup=get_created_tests_keyboard(authors_tests)
     )
-
 
 # async def main() -> None:
 #     # with open(MAIN_LOG_FILE, "a") as log:

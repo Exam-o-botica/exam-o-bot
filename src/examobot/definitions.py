@@ -26,6 +26,7 @@ SCOPES = "https://www.googleapis.com/auth/forms.body.readonly"
 DISCOVERY_DOC = "https://forms.googleapis.com/$discovery/rest?version=v1"
 TOKEN_STORE = file.Storage("token.json")
 
+
 # For localization
 class SupportedLanguages(enum.Enum):
     EN = "en"

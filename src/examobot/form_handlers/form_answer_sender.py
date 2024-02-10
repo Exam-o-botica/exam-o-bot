@@ -2,9 +2,10 @@ import asyncio
 import json
 from typing import Any
 
-from examobot.form_handlers.exceptions import *
 import requests
 from lxml import html
+
+from examobot.form_handlers.exceptions import *
 
 
 class FormAnswerSender:
@@ -12,6 +13,7 @@ class FormAnswerSender:
     Class for sending answers to Google Forms.
     Basically, just use send_answer_... for sending answer.
     """
+
     @staticmethod
     def _create_send_url(base_url: str, answers: dict[int, str]) -> str:
         """
@@ -25,7 +27,13 @@ class FormAnswerSender:
             form_id = base_url.split("/")[-2]
             new_url = f'https://docs.google.com/forms/d/e/{form_id}/formResponse?&submit=Submit?&'
             for entry_id, answer in answers.items():
-                entry_param = f'entry.{entry_id}={answer}&'
+                if isinstance(answer, list):  # For checkboxes
+                    entry_param = ""
+                    for answer_element in answer:
+                        entry_param += f'entry.{entry_id}={answer_element}&'
+                else:
+                    entry_param = f'entry.{entry_id}={answer}&'
+
                 new_url += entry_param
             return new_url
         except Exception as e:
@@ -80,6 +88,7 @@ class FormAnswerSender:
         :param answers: Dictionary where keys are IDs of question items in dec format and values are the answers.
         """
         url = FormAnswerSender._create_send_url(responder_uri, answers)
+        print("RESPONSE URL: " + url)
         resp = requests.get(url)
         FormAnswerSender._raise_for_status_custom_exception(resp, url)
         FormAnswerSender._determine_if_test_is_complete(resp.text)
@@ -136,13 +145,32 @@ def _incorrect_send_fail(form_answer_sender, data):
         print("If this error was caught then we successfully sent answers but they were in a wrong format.")
 
 
+def _radio_and_checkbox_send(form_answer_sender, data):
+    answers = {
+        1509486669: "%D0%90",
+        1434854010: "%D0%91",
+        1037782935: "%D0%92",
+        # 1078738633: ["%D0%92", "%D0%91"],
+        1078738633: "%D0%92",
+        # 1909443258: ["%D0%92", "%D0%90"]
+        1909443258: "%D0%90"
+    }
+    try:
+        asyncio.run(form_answer_sender.send_answer_data(data, answers))
+    except TestCompleteFailError as e:
+        print(e)
+        print("If this error was caught then we successfully sent answers but they were in a wrong format.")
+
+
 def main():
     form_answer_sender = FormAnswerSender()
     print(help(form_answer_sender))
-    with open("examples/exampleForm.json", 'r') as file:
+    with open("examples/exampleFormRadioAndCheckbox.json", 'r') as file:
         data = json.load(file)
-    _correct_send(form_answer_sender, data)
-    _incorrect_send_fail(form_answer_sender, data)
+
+    _radio_and_checkbox_send(form_answer_sender, data)
+    # _correct_send(form_answer_sender, data)
+    # _incorrect_send_fail(form_answer_sender, data)
 
 
 if __name__ == "__main__":
