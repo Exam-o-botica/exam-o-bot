@@ -15,6 +15,7 @@ from examobot.bot.examobot_tasks import tasks_router, handle_one_choice_question
     handle_multiple_choice_question_option_query
 from examobot.bot.keyboards import *
 from examobot.db.tables import *
+from examobot.definitions import BOT_NAME
 from examobot.form_handlers import *
 from examobot.form_handlers.exceptions import JSONParseError, URLFailedCreationError, BadRequestError, HTMLParseError, \
     TestCompleteFailError
@@ -665,14 +666,17 @@ async def handle_delete_entity_confirm_query(call: types.CallbackQuery) -> None:
 async def handle_show_classroom_participants_query(call: types.CallbackQuery) -> None:
     classroom_id = get_test_id_or_classroom_id_from_callback(call.data)
     classroom = await db_manager.get_classroom_by_id(classroom_id)
-    participants = await db_manager.get_users_in_classroom(classroom_id)
-    participants_text = "\n".join([f"{p.name} - @{p.username}" for p in participants])
+    participants = await db_manager.get_users_in_classroom(classroom.id)
     if len(participants) == 0:
         msg = "Список участников пуст"
     else:
+        participants_text = "\n".join([f"{p.name} - @{p.username}" for p in participants])
         msg = f"Подборка \"{classroom.title}\" участники:\n" + participants_text
-    await call.bot.edit_message_text(msg, call.from_user.id, call.message.message_id,
-                                     reply_markup=go_to_previous_menu_keyboard(SPEC_CREATED_CLASSROOM, [classroom_id]))
+    await call.bot.edit_message_text(
+        text=msg,
+        chat_id=call.from_user.id,
+        message_id=call.message.message_id,
+        reply_markup=go_to_previous_menu_keyboard(SPEC_CREATED_CLASSROOM, [classroom_id]))
 
 
 async def handle_spec_created_classroom_query(call: types.CallbackQuery):
@@ -689,7 +693,7 @@ async def handle_spec_created_classroom_query(call: types.CallbackQuery):
 
 
 async def handle_spec_share_test_link_to_classroom_query(call: types.CallbackQuery) -> None:
-    test_id, classroom_id = call.data.split("#")[1:]
+    test_id, classroom_id = map(int, call.data.split("#")[1:])
     await send_test_to_classroom_participants(test_id, classroom_id, call.bot)
     await call.bot.edit_message_text("Сообщение отправлено участникам", call.from_user.id, call.message.message_id,
                                      reply_markup=get_go_to_main_menu_keyboard())
@@ -729,7 +733,7 @@ async def handle_share_test_link_query(call: types.CallbackQuery) -> None:
 
 
 def generate_link(type_: Entity, uuid: int) -> str:
-    bot_name = os.getenv('BOT_NAME')
+    bot_name = BOT_NAME
     if type_ == Entity.TEST:
         return f"https://t.me/{bot_name}?start=test={uuid}"
     else:

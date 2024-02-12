@@ -16,6 +16,7 @@ DEFAULT_DB_FILE = os.path.join(DB_DIR, "examobot_db.db")
 
 # For bot
 TOKEN = os.getenv("EXAM_O_BOT_TOKEN")
+BOT_NAME = os.getenv('BOT_NAME')
 DEFAULT_USER_AGENT = "Mozilla/5.0 (Windows NT 6.1; rv:84.0) Gecko/20100101 Firefox/84.0"
 
 # For Google Script API
@@ -24,7 +25,8 @@ GOOGLE_CREDENTIALS_DIR = os.path.join(FORM_HANDLERS_DIR, "credentials")
 GOOGLE_CLIENT_SECRETS = os.path.join(GOOGLE_CREDENTIALS_DIR, "client_secrets.json")
 SCOPES = "https://www.googleapis.com/auth/forms.body.readonly"
 DISCOVERY_DOC = "https://forms.googleapis.com/$discovery/rest?version=v1"
-TOKEN_STORE = file.Storage("token.json")
+TOKEN_STORE_PATH = os.path.join(GOOGLE_CREDENTIALS_DIR, "token.json")
+TOKEN_STORE = file.Storage(TOKEN_STORE_PATH)
 
 
 # For localization
