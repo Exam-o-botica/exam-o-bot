@@ -6,6 +6,7 @@ import requests
 from lxml import html
 
 from examobot.form_handlers.exceptions import *
+from examobot.task_translator.questions_classes import FormResponseParameters
 
 
 class FormAnswerSender:
@@ -15,7 +16,7 @@ class FormAnswerSender:
     """
 
     @staticmethod
-    def _create_send_url(base_url: str, answers: dict[int, str]) -> str:
+    def _create_send_url(base_url: str, answers: dict[int, FormResponseParameters]) -> str:
         """
         This function creates needed link that when accessing allows to fill the form.
         :param base_url: Responder URI link for viewing form.
@@ -26,15 +27,12 @@ class FormAnswerSender:
         try:
             form_id = base_url.split("/")[-2]
             new_url = f'https://docs.google.com/forms/d/e/{form_id}/formResponse?&submit=Submit?&'
-            for entry_id, answer in answers.items():
-                if isinstance(answer, list):  # For checkboxes
-                    entry_param = ""
-                    for answer_element in answer:
-                        entry_param += f'entry.{entry_id}={answer_element}&'
-                else:
-                    entry_param = f'entry.{entry_id}={answer}&'
+            for question_id, params in answers.items():
+                params_string = ""
+                for param in params.get_parameters():
+                    params_string += f'{param["prefix"]}.{question_id}={param["value"]}&'
 
-                new_url += entry_param
+                new_url += params_string
             return new_url
         except Exception as e:
             raise URLFailedCreationError from e
@@ -121,22 +119,22 @@ class FormAnswerSender:
 
 def _correct_send(form_answer_sender, data):
     correct_answers = {
-        1868536814: "1965",
-        1059122755: "%D0%91%D0%B5%D0%B1%D1%80%D0%B0",
-        748499805: "%D0%91%D0%B8%D0%B1%D0%B0",
-        857106950: "%D0%92%D0%B0%D1%80%D0%B8%D0%B0%D0%BD%D1%82+1",
-        422932123: "%D0%92%D0%B0%D1%80%D0%B8%D0%B0%D0%BD%D1%82+1"
+        1868536814: FormResponseParameters("1965"),
+        1059122755: FormResponseParameters("%D0%91%D0%B5%D0%B1%D1%80%D0%B0"),
+        748499805: FormResponseParameters("%D0%91%D0%B8%D0%B1%D0%B0"),
+        857106950: FormResponseParameters("%D0%92%D0%B0%D1%80%D0%B8%D0%B0%D0%BD%D1%82+1"),
+        422932123: FormResponseParameters("%D0%92%D0%B0%D1%80%D0%B8%D0%B0%D0%BD%D1%82+1")
     }
     asyncio.run(form_answer_sender.send_answer_data(data, correct_answers))
 
 
 def _incorrect_send_fail(form_answer_sender, data):
     incorrect_answers = {
-        1868536814: "1965",
-        10522755: "%D0%91%D0%B5%D0%B1%D1%80%D0%B0",
-        748499805: "%D0%91%D0%B8%D0%B1%D0%B0",
-        857106950: "%D0%92%D0%B0%D1%80%D0%B8%D0%B0%D0%BD%D1%82+1",
-        422932123: "%D0%92%D0%B0%D1%80%D0%B8%D0%B0%D0%BD%D1%82+1"
+        1868536814: FormResponseParameters("1965"),
+        10522755: FormResponseParameters("%D0%91%D0%B5%D0%B1%D1%80%D0%B0"),
+        748499805: FormResponseParameters("%D0%91%D0%B8%D0%B1%D0%B0"),
+        857106950: FormResponseParameters("%D0%92%D0%B0%D1%80%D0%B8%D0%B0%D0%BD%D1%82+1"),
+        422932123: FormResponseParameters("%D0%92%D0%B0%D1%80%D0%B8%D0%B0%D0%BD%D1%82+1")
     }
     try:
         asyncio.run(form_answer_sender.send_answer_data(data, incorrect_answers))
@@ -147,13 +145,11 @@ def _incorrect_send_fail(form_answer_sender, data):
 
 def _radio_and_checkbox_send(form_answer_sender, data):
     answers = {
-        1509486669: "%D0%90",
-        1434854010: "%D0%91",
-        1037782935: "%D0%92",
-        # 1078738633: ["%D0%92", "%D0%91"],
-        1078738633: "%D0%92",
-        # 1909443258: ["%D0%92", "%D0%90"]
-        1909443258: "%D0%90"
+        1509486669: FormResponseParameters("%D0%90"),
+        1434854010: FormResponseParameters("%D0%91"),
+        1037782935: FormResponseParameters("%D0%92"),
+        1078738633: FormResponseParameters("%D0%92"),
+        1909443258: FormResponseParameters("%D0%90")
     }
     try:
         asyncio.run(form_answer_sender.send_answer_data(data, answers))

@@ -415,7 +415,7 @@ async def handle_end_test_query(call: CallbackQuery):
         task = await db_manager.get_task_by_id(task_id=answer.task_id)
         question = QuestionType[task.task_type].value
         decimal_google_question_id = int(task.google_form_question_id, 16)
-        google_form_answers[decimal_google_question_id] = question.convert_answer_to_string_repr(answer)
+        google_form_answers[decimal_google_question_id] = question.convert_answer_to_string_repr(answer, task)
 
     await db_manager.delete_answers_by_test_id_and_user_id(test_id=cur_test_id, user_id=user_id)
     test = await db_manager.get_test_by_id(cur_test_id)

@@ -10,22 +10,40 @@ from examobot.db.tables import Answer, AnswerStatus
 from examobot.task_translator.task_keyboards import *
 
 
-class Parameters:
-    def __init__(self) -> None:
-        self.values: list[tuple[str, str]] = []
+class FormResponseParameters:
+    DEFAULT_PREFIX = "entry"
 
-    def add_parameter(self, value: str, prefix: str = "entry") -> None:
-        self.values.append((prefix, value))
+    def __init__(self, value: str = None, prefix: str = DEFAULT_PREFIX) -> None:
+        self.values: list[dict[str, str]] = []
+        if value:
+            self.add_value(value, prefix=prefix)
 
-    def __iter__(self):
-        return self
+    def add_value(self, value: str, prefix: str = DEFAULT_PREFIX) -> None:
+        self.values.append({"prefix": prefix, "value": value})
 
-    def __next__(self) -> Generator[tuple[str, str], None, None]:
+    def add_values(self, values: list[str], prefix: str = DEFAULT_PREFIX) -> None:
+        for value in values:
+            self.values.append({"prefix": prefix, "value": value})
+
+    def get_parameters(self) -> Generator[dict[str, str], None, None]:
         yield from self.values
-        raise StopIteration
+
+    @staticmethod
+    def from_string(value: str, prefix: str = DEFAULT_PREFIX) -> 'FormResponseParameters':
+        return FormResponseParameters(value, prefix=prefix)
+
+    @staticmethod
+    def from_string_list(values: list[str], prefix: str = DEFAULT_PREFIX) -> 'FormResponseParameters':
+        params = FormResponseParameters()
+        params.add_values(values, prefix=prefix)
+        return params
 
 
 class Question(ABC):
+    @staticmethod
+    def get_index(option_index: str):
+        return int(option_index) - 1
+
     @staticmethod
     async def get_text_with_options(task: Task, options: list[str]):
         text = task.text
@@ -46,13 +64,15 @@ class Question(ABC):
             user_id=user_id
         )
 
+        if answer_data_converter:
+            values_to_replace["answer_data"] = answer_data_converter(
+                existing_answer.answer_data if existing_answer else []
+            )
+
         if not existing_answer:
             answer = Answer(**values_to_replace, task_id=task_id, user_id=user_id)
             await db_manager.add_answer(answer)
             return
-
-        if answer_data_converter:
-            values_to_replace["answer_data"] = answer_data_converter(existing_answer.answer_data)
 
         await db_manager.update_answer_by_id(
             answer_id=existing_answer.id,
@@ -88,7 +108,7 @@ class Question(ABC):
 
     @staticmethod
     @abstractmethod
-    def convert_answer_to_string_repr(answer: Answer) -> str:
+    def convert_answer_to_string_repr(answer: Answer, task: Task) -> FormResponseParameters:
         """
             this method is needed to convert answer to string representation of answer
             to use in the link that we send to google form back
@@ -146,9 +166,11 @@ class StringOrTextQuestion(Question):
         )
 
     @staticmethod
-    def convert_answer_to_string_repr(answer: Answer) -> str:
-        encoded = urllib.parse.quote_plus(answer.answer_data[0])
-        return encoded
+    def convert_answer_to_string_repr(answer: Answer, task: Task) -> FormResponseParameters:
+        params = FormResponseParameters(
+            urllib.parse.quote_plus(answer.answer_data[0])
+        )
+        return params
 
 
 class OneChoiceQuestion(Question):
@@ -204,9 +226,14 @@ class OneChoiceQuestion(Question):
             values_to_replace=values, task_id=task_id, user_id=user_ans.from_user.id)
 
     @staticmethod
-    def convert_answer_to_string_repr(answer: Answer) -> str:
-        encoded = urllib.parse.quote_plus(answer.answer_data[0])
-        return encoded
+    def convert_answer_to_string_repr(answer: Answer, task: Task) -> FormResponseParameters:
+        true_answer = task.options[
+            Question.get_index(answer.answer_data[0])
+        ]
+        params = FormResponseParameters(
+            urllib.parse.quote_plus(true_answer)
+        )
+        return params
 
 
 class MultipleChoiceQuestion(Question):
@@ -275,6 +302,9 @@ class MultipleChoiceQuestion(Question):
         )
 
     @staticmethod
-    def convert_answer_to_string_repr(answer: Answer) -> str:
-        encoded = [urllib.parse.quote_plus(ans) for ans in answer.answer_data]
-        return encoded
+    def convert_answer_to_string_repr(answer: Answer, task: Task) -> FormResponseParameters:
+        task_options = task.options
+        true_answers = [task_options[Question.get_index(i)] for i in answer.answer_data]
+        return FormResponseParameters.from_string_list(
+            [urllib.parse.quote_plus(ans) for ans in true_answers]
+        )
