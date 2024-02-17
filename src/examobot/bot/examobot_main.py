@@ -556,12 +556,20 @@ async def handle_edit_classroom_query(call: types.CallbackQuery):
         reply_markup=get_edit_classroom_keyboard(classroom))
 
 
-async def check_test_or_classroom_was_deleted_and_inform_user(entity: Test | Classroom, text,
-                                                              call: types.CallbackQuery):
+async def check_test_or_classroom_was_deleted_and_inform_user(
+        entity: Test | Classroom,
+        text: str,
+        call: types.CallbackQuery
+):
     if entity:
         return False
-    await call.bot.edit_message_text(text, call.from_user.id, call.message.message_id,
-                                     reply_markup=get_go_to_main_menu_keyboard())
+
+    await call.bot.edit_message_text(
+        text=text,
+        chat_id=call.from_user.id,
+        message_id=call.message.message_id,
+        reply_markup=get_go_to_main_menu_keyboard()
+    )
     return True
 
 
@@ -767,7 +775,7 @@ def get_spec_test_info_message(test: Test) -> str:
     time_ = inf_sign if test.time == -1 else test.time
     deadline = inf_sign if test.deadline == -1 else test.deadline  # TODO ts -> datetime
     attempts = inf_sign if test.attempts_number == -1 else test.attempts_number
-    status = "доступен" if test.status_set_by_author == TestStatus.AVAILABLE.name else "недоступен"
+    status = "доступен" if test.status_set_by_author == TestStatus.AVAILABLE else "недоступен"
 
     msg = f"""
     <b>Название:</b> {test.title}
