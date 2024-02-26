@@ -222,7 +222,7 @@ def get_respondent_buttons_():
 
 # COMMON KEYBOARDS #
 def get_main_menu_keyboard():
-    inline_keyboard = get_authors_buttons_() + get_respondent_buttons_()
+    inline_keyboard = get_respondent_buttons_() + get_authors_buttons_()
     return types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
 
 
