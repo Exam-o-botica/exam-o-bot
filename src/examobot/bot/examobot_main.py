@@ -760,26 +760,36 @@ async def handle_current_ended_or_with_no_attempts_tests_query(call: types.Callb
 
 
 async def handle_current_available_test_with_attempts_query(call: types.CallbackQuery) -> None:
-    current_available_test_with_attempts = await db_manager.get_current_available_test_with_attempts_by_user_id(
-        call.from_user.id)
+    current_available_test_with_attempts = \
+        await db_manager.get_current_available_test_with_attempts_by_user_id(
+            call.from_user.id
+        )
     if len(current_available_test_with_attempts) == 0:
         text = "Список опросов пуст"
     else:
         text = "Доступные опросы:"
-    await call.bot.edit_message_text(text, call.from_user.id, call.message.message_id,
-                                     reply_markup=get_current_tests_keyboard(current_available_test_with_attempts))
+    await call.bot.edit_message_text(
+        text=text,
+        chat_id=call.from_user.id,
+        message_id=call.message.message_id,
+        reply_markup=get_current_tests_keyboard(current_available_test_with_attempts)
+    )
 
 
 def get_spec_test_info_message(test: Test) -> str:
     inf_sign = "∞"
     time_ = inf_sign if test.time == -1 else test.time
-    deadline = inf_sign if test.deadline == -1 else test.deadline  # TODO ts -> datetime
+
+    timestamp = test.deadline
+    deadline = inf_sign if timestamp == -1 \
+        else datetime.fromtimestamp(timestamp).strftime("%d.%m.%Y %H:%M")
+
     attempts = inf_sign if test.attempts_number == -1 else test.attempts_number
     status = "доступен" if test.status_set_by_author == TestStatus.AVAILABLE else "недоступен"
 
     msg = f"""
     <b>Название:</b> {test.title}
-    <b>Время прохождения:</b> {time_} min
+    <b>Время прохождения:</b> {time_} мин
     <b>Дедлайн:</b> {deadline}
     <b>Число попыток:</b> {attempts}
     <b>Статус:</b> {status} {get_emoji_test_status(test.status_set_by_author)}
