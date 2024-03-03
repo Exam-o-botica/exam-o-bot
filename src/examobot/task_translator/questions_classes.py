@@ -87,7 +87,7 @@ class Question(ABC):
 
     @staticmethod
     @abstractmethod
-    async def send_question(bot: Bot, user_id: int, task: Task) -> list[Message]:
+    async def send_question(bot: Bot, user_id: int, task: Task, menu_message_id: int) -> list[Message]:
         pass
 
     @staticmethod
@@ -115,6 +115,41 @@ class Question(ABC):
         """
         pass
 
+    @staticmethod
+    async def send_new_or_edit_message(
+            bot: Bot, menu_message_id: int,
+            task: Task,
+            user_id: int,
+            text: str,
+            keyboard: InlineKeyboardMarkup):
+
+        messages_to_delete = []
+        if not task.input_media:
+            await bot.edit_message_text(
+                chat_id=user_id,
+                message_id=menu_message_id,
+                text=text,
+                reply_markup=keyboard
+            )
+
+        else:
+            await bot.delete_message(
+                chat_id=user_id,
+                message_id=menu_message_id
+            )
+            msg1 = await bot.send_photo(
+                chat_id=user_id,
+                photo=str(task.input_media)
+            )  # todo maybe incorrect media type
+            messages_to_delete.append(msg1)
+
+            await bot.send_message(
+                chat_id=user_id,
+                text=text,
+                reply_markup=keyboard
+            )
+        return messages_to_delete
+
 
 class StringOrTextQuestion(Question):
 
@@ -123,21 +158,15 @@ class StringOrTextQuestion(Question):
         return True
 
     @staticmethod
-    async def send_question(bot: Bot, user_id: int, task: Task):
-        messages_to_delete = []
-        if task.input_media:
-            msg1 = await bot.send_photo(
-                chat_id=user_id,
-                photo=str(task.input_media)
-            )
-            messages_to_delete.append(msg1)
-
-        msg2 = await bot.send_message(
-            chat_id=user_id,
+    async def send_question(bot: Bot, user_id: int, task: Task, menu_message_id: int):
+        messages_to_delete = await Question.send_new_or_edit_message(
+            bot=bot,
+            menu_message_id=menu_message_id,
+            task=task,
+            user_id=user_id,
             text=task.text,
-            reply_markup=get_no_options_keyboard(task)
+            keyboard=get_no_options_keyboard(task)
         )
-        messages_to_delete.append(msg2)
         return messages_to_delete
 
     @staticmethod
@@ -179,7 +208,7 @@ class OneChoiceQuestion(Question):
         return False
 
     @staticmethod
-    async def send_question(bot: Bot, user_id: int, task: Task) -> list[Message]:
+    async def send_question(bot: Bot, user_id: int, task: Task, menu_message_id: int) -> list[Message]:
         options = task.options
         if not options:
             raise AssertionError("Expected answer options in this type of questions")
@@ -189,22 +218,17 @@ class OneChoiceQuestion(Question):
             if not answer or answer.status == AnswerStatus.UNCHECKED \
             else int(answer.answer_data[0])
 
-        task = await db_manager.get_task_by_id(task.id)
-        messages_to_delete = []
-        if task.input_media:
-            msg1 = await bot.send_photo(
-                chat_id=user_id,
-                photo=str(task.input_media)
-            ),  # todo maybe incorrect media type
-            messages_to_delete.append(msg1)
-
+        # task = await db_manager.get_task_by_id(task.id)  # TODO WTF?
         text = await Question.get_text_with_options(task, options)
-        msg2 = await bot.send_message(
-            chat_id=user_id,
+
+        messages_to_delete = await Question.send_new_or_edit_message(
+            bot=bot,
+            menu_message_id=menu_message_id,
+            task=task,
+            user_id=user_id,
             text=text,
-            reply_markup=get_one_choice_keyboard(task, len(options), chosen_variant)
+            keyboard=get_one_choice_keyboard(task, len(options), chosen_variant)
         )
-        messages_to_delete.append(msg2)
         return messages_to_delete
 
     @staticmethod
@@ -243,7 +267,7 @@ class MultipleChoiceQuestion(Question):
         return False
 
     @staticmethod
-    async def send_question(bot: Bot, user_id: int, task: Task) -> list[Message]:
+    async def send_question(bot: Bot, user_id: int, task: Task, menu_message_id: int) -> list[Message]:
         options = task.options
         if not options:
             raise AssertionError("Expected answer options in this type of questions")
@@ -253,21 +277,16 @@ class MultipleChoiceQuestion(Question):
             if not answer or answer.status == AnswerStatus.UNCHECKED \
             else [int(option) for option in answer.answer_data]
 
-        messages_to_delete = []
-        if task.input_media:
-            msg1 = await bot.send_photo(
-                chat_id=user_id,
-                photo=str(task.input_media)
-            )
-            messages_to_delete.append(msg1)
-
         text = await Question.get_text_with_options(task, options)
-        msg2 = await bot.send_message(
-            chat_id=user_id,
+
+        messages_to_delete = await Question.send_new_or_edit_message(
+            bot=bot,
+            menu_message_id=menu_message_id,
+            task=task,
+            user_id=user_id,
             text=text,
-            reply_markup=get_multiple_choice_keyboard(task, len(options), chosen_options)
+            keyboard=get_multiple_choice_keyboard(task, len(options), chosen_options)
         )
-        messages_to_delete.append(msg2)
         return messages_to_delete
 
     @staticmethod

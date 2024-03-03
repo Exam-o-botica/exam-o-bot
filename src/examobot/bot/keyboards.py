@@ -162,8 +162,8 @@ def get_share_test_link_to_classroom_keyboard(test_id: int, classrooms: list[Cla
 
 def get_current_tests_menu_keyboard():
     inline_keyboard = [
-        [CURRENT_ENDED_OR_WITH_NO_ATTEMPTS_TESTS.get_button()],
         [CURRENT_AVAILABLE_TEST_WITH_ATTEMPTS.get_button()],
+        [CURRENT_ENDED_OR_WITH_NO_ATTEMPTS_TESTS.get_button()],
         [BACK_TO_MAIN_MENU_BUTTON],
     ]
     return types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
@@ -249,10 +249,22 @@ def go_to_previous_menu_keyboard(button: Button, parameters=None):
     return types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
 
 
+def get_spec_task_button_text(task: Task, index: int):
+    text = f"Вопрос {index}"
+    if task.required:
+        required_text = " (обязательный)"
+        text += required_text
+
+    return text
+
+
 def get_current_test_tasks_keyboard(tasks: list[Task]):
     tasks_list = [
         [
-            SPEC_CURRENT_TEST_TASK.get_button(new_text=f"Вопрос {ind}", parameters=[task.id])
+            SPEC_CURRENT_TEST_TASK.get_button(
+                new_text=get_spec_task_button_text(task, ind),
+                parameters=[task.id]
+            )
         ] for ind, task in enumerate(tasks, start=1)
     ]
 

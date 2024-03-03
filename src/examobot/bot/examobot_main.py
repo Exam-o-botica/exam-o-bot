@@ -446,14 +446,29 @@ async def handle_end_test_query(call: CallbackQuery):
         await send_end_test_error(call, test, text="unfortunately, some error occurred.")
 
 
+async def delete_question_messages(bot: Bot, user_id: int):
+    user = await db_manager.get_user_by_id(user_id)
+    if user.current_messages_to_delete:
+        for message_id in user.current_messages_to_delete:
+            try:
+                await bot.delete_message(user_id, message_id)
+            except Exception:
+                pass
+
+        await db_manager.update_user_by_id(user_id, current_messages_to_delete=[])
+
+
 async def handle_back_to_test_questions_from_task_query(call: types.CallbackQuery):
-    await db_manager.update_user_by_id(call.from_user.id, current_task_id=None)
+    user_id = call.from_user.id
+    await db_manager.update_user_by_id(user_id, current_task_id=None)
+    await delete_question_messages(bot=call.bot, user_id=user_id)
+
     test_id = get_test_id_or_classroom_id_from_callback(call.data)
     test = await db_manager.get_test_by_id(test_id)
     if not test:
         await call.bot.edit_message_text(
             "Тест был удален автором",
-            call.from_user.id,
+            user_id,
             call.message.message_id,
             reply_markup=get_go_to_main_menu_keyboard()
         )
@@ -462,42 +477,39 @@ async def handle_back_to_test_questions_from_task_query(call: types.CallbackQuer
     tasks: list[Task] = await db_manager.get_tasks_by_test_id(test_id)
     await call.bot.edit_message_text(
         test.title,
-        call.from_user.id,
+        user_id,
         call.message.message_id,
         reply_markup=get_current_test_tasks_keyboard(tasks)
     )
 
 
 async def handle_spec_current_test_task_query(call: types.CallbackQuery):
+    user_id = call.from_user.id
     task_id = get_test_id_or_classroom_id_from_callback(call.data)
     task = await db_manager.get_task_by_id(task_id)
     if not task:
         await call.bot.edit_message_text(
             text="Тест был удален автором",
-            chat_id=call.from_user.id,
+            chat_id=user_id,
             message_id=call.message.message_id,
             reply_markup=get_go_to_main_menu_keyboard()
         )
         return
 
-    await call.bot.delete_message(call.from_user.id, call.message.message_id)
-
     question: Question = QuestionType[task.task_type].value
-    messages_to_delete = await question.send_question(call.bot, call.from_user.id, task)
+    messages_to_delete = await question.send_question(
+        bot=call.bot,
+        user_id=user_id,
+        task=task,
+        menu_message_id=call.message.message_id
+    )
 
     message_ids_to_delete = [msg.message_id for msg in messages_to_delete if msg is not None]
     await db_manager.update_user_by_id(
-        call.from_user.id,
+        user_id,
         current_task_id=task_id,
         current_messages_to_delete=message_ids_to_delete
     )
-
-    # await call.bot.edit_message_text(f"task title: {task.title}\n"
-    #                                  f"task text: {task.text}\n"
-    #                                  f"task options: {task.options}\n"
-    #                                  f"task input media: {task.input_media}\n",
-    #                                  call.from_user.id, call.message.message_id,
-    #                                  reply_markup=get_spec_current_test_task_keyboard(task))
 
 
 async def handle_start_current_test_query(call: types.CallbackQuery):

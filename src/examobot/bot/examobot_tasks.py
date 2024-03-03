@@ -1,5 +1,6 @@
 from aiogram import Router, Bot
 from aiogram.types import Message, InlineKeyboardMarkup, CallbackQuery
+from aiogram.utils.markdown import hbold
 
 from examobot.bot.keyboards import get_go_to_main_menu_keyboard, get_current_test_tasks_keyboard
 from examobot.db.manager import db_manager
@@ -8,18 +9,6 @@ from examobot.task_translator.QuestionType import QuestionType
 from examobot.task_translator.questions_classes import Question, OneChoiceQuestion, MultipleChoiceQuestion
 
 tasks_router = Router(name="tasks_router")
-
-
-async def delete_question_messages(bot: Bot, user_id: int):
-    user = await db_manager.get_user_by_id(user_id)
-    if user.current_messages_to_delete:
-        for message_id in user.current_messages_to_delete:
-            try:
-                await bot.delete_message(user_id, message_id)
-            except Exception:
-                pass
-
-        await db_manager.update_user_by_id(user_id, current_messages_to_delete=[])
 
 
 async def get_task_safe(
@@ -82,13 +71,13 @@ async def handle_question(
         question: Question,
         message_or_call: Message | CallbackQuery,
         user_id: int, bot: Bot,
-        message_id: int,
-        task: Task = None
+        answer_message_id: int,
+        task: Task = None,
 ):
     user, cur_test_id, cur_task_id = await get_current_user_test_task_state(
         user_id=user_id,
         bot=bot,
-        message_id=message_id
+        message_id=answer_message_id
     )
     if not cur_test_id or not cur_task_id:
         return
@@ -99,35 +88,23 @@ async def handle_question(
             task_id=task_id,
             chat_id=user_id,
             bot=bot,
-            message_id=message_id,
+            message_id=answer_message_id,
             error_reply_markup=get_go_to_main_menu_keyboard()
         )
         if not task:
             return
 
-    task_id = task.id
+    await question.save_answer(message_or_call, task.id)
 
-    await delete_question_messages(bot=bot, user_id=user_id)
-    await question.save_answer(message_or_call, task_id)
-    await db_manager.update_user_by_id(user_id, current_task_id=None)
+    answer_is_saved_text = "Ответ сохранен"
+    if isinstance(message_or_call, CallbackQuery):
+        await bot.answer_callback_query(message_or_call.id, text=answer_is_saved_text)
 
-    test = await get_test_safe(
-        test_id=cur_test_id,
-        chat_id=user_id,
-        bot=bot,
-        message_id=message_id,
-        error_reply_markup=get_go_to_main_menu_keyboard()
-    )
-    if not test:
-        return
-
-    await bot.send_message(text="Ответ сохранён", chat_id=user_id)
-    await show_menu_with_tasks(
-        cur_test_id=cur_test_id,
-        bot=bot,
-        chat_id=user_id,
-        test_title=test.title
-    )
+    if isinstance(message_or_call, Message):
+        message_ids_to_delete = user.current_messages_to_delete + [message_or_call.message_id]
+        await db_manager.update_user_by_id(
+            user_id, current_messages_to_delete=message_ids_to_delete
+        )
 
 
 async def handle_question_with_call(question: Question, call: CallbackQuery):
@@ -140,7 +117,7 @@ async def handle_question_with_call(question: Question, call: CallbackQuery):
         message_or_call=call,
         user_id=user_id,
         bot=bot,
-        message_id=message_id
+        answer_message_id=message_id
     )
 
 
@@ -176,7 +153,7 @@ async def handle_message_sent_by_user(message: Message):
         message_or_call=message,
         user_id=user_id,
         bot=bot,
-        message_id=message_id,
+        answer_message_id=message_id,
         task=task
     )
 
