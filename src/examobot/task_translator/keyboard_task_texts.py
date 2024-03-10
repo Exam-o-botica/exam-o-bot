@@ -2,6 +2,8 @@ from examobot.bot.Button import Button
 
 BACK_TO_TEST_QUESTIONS_FROM_TASK = Button(name='BACK_TO_TEST_QUESTION_FROM_TASK', text='К вопросам')
 
+BACK_TO_QUESTION_TEXT = Button(name="BACK_TO_QUESTION_TEXT", text='Вернуться к вопросу')
+
 END_TEST = Button(name='END_TEST', text='Завершить')
 
 ONE_CHOICE_QUESTION_OPTION = Button(

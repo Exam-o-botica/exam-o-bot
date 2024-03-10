@@ -374,6 +374,9 @@ async def callback_inline(call: types.CallbackQuery, state: FSMContext) -> None:
     elif BACK_TO_TEST_QUESTIONS_FROM_TASK.has_that_callback(call.data):
         await handle_back_to_test_questions_from_task_query(call)
 
+    elif BACK_TO_QUESTION_TEXT.has_that_callback(call.data):
+        await handle_back_to_question_text_query(call)
+
     elif END_TEST.has_that_callback(call.data):
         await handle_end_test_query(call)
 
@@ -456,6 +459,11 @@ async def delete_question_messages(bot: Bot, user_id: int):
                 pass
 
         await db_manager.update_user_by_id(user_id, current_messages_to_delete=[])
+
+
+async def handle_back_to_question_text_query(call: types.CallbackQuery):
+    user_id = call.from_user.id
+    await delete_question_messages(bot=call.bot, user_id=user_id)
 
 
 async def handle_back_to_test_questions_from_task_query(call: types.CallbackQuery):

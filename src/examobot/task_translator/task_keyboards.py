@@ -1,8 +1,8 @@
+from aiogram import types
 from aiogram.types import InlineKeyboardMarkup
 
 from examobot.db.tables import Task
 from examobot.task_translator.keyboard_task_texts import *
-from aiogram import types
 
 
 def make_pinned_option_text(order_number: int, chosen_options: list[int]) -> str:
@@ -12,6 +12,13 @@ def make_pinned_option_text(order_number: int, chosen_options: list[int]) -> str
         text = text + " 📌"
 
     return text
+
+
+def get_back_to_question_text():
+    inline_keyboard = [
+        [BACK_TO_QUESTION_TEXT.get_button()]
+    ]
+    return types.InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
 
 
 def get_no_options_keyboard(task: Task):

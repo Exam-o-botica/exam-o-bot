@@ -4,6 +4,7 @@ from typing import Any, Callable, Generator
 
 from aiogram import Bot
 from aiogram.types import Message, CallbackQuery
+from aiogram.utils.markdown import hbold
 
 from examobot.db.manager import db_manager
 from examobot.db.tables import Answer, AnswerStatus
@@ -159,12 +160,13 @@ class StringOrTextQuestion(Question):
 
     @staticmethod
     async def send_question(bot: Bot, user_id: int, task: Task, menu_message_id: int):
+        question_text = task.text + "\n" + hbold("Запомнен будет последний данный ответ")
         messages_to_delete = await Question.send_new_or_edit_message(
             bot=bot,
             menu_message_id=menu_message_id,
             task=task,
             user_id=user_id,
-            text=task.text,
+            text=question_text,
             keyboard=get_no_options_keyboard(task)
         )
         return messages_to_delete

@@ -1,12 +1,12 @@
 from aiogram import Router, Bot
 from aiogram.types import Message, InlineKeyboardMarkup, CallbackQuery
-from aiogram.utils.markdown import hbold
 
 from examobot.bot.keyboards import get_go_to_main_menu_keyboard, get_current_test_tasks_keyboard
 from examobot.db.manager import db_manager
 from examobot.db.tables import Task, Test
 from examobot.task_translator.QuestionType import QuestionType
 from examobot.task_translator.questions_classes import Question, OneChoiceQuestion, MultipleChoiceQuestion
+from examobot.task_translator.task_keyboards import get_no_options_keyboard, get_back_to_question_text
 
 tasks_router = Router(name="tasks_router")
 
@@ -100,8 +100,20 @@ async def handle_question(
     if isinstance(message_or_call, CallbackQuery):
         await bot.answer_callback_query(message_or_call.id, text=answer_is_saved_text)
 
-    if isinstance(message_or_call, Message):
-        message_ids_to_delete = user.current_messages_to_delete + [message_or_call.message_id]
+    elif isinstance(message_or_call, Message):
+        is_saved_message = await bot.send_message(
+            chat_id=user_id,
+            text=answer_is_saved_text,
+            reply_markup=get_back_to_question_text()
+        )
+
+        message_ids_to_delete = (
+                user.current_messages_to_delete +
+                [
+                    message_or_call.message_id,
+                    is_saved_message.message_id
+                ]
+        )
         await db_manager.update_user_by_id(
             user_id, current_messages_to_delete=message_ids_to_delete
         )
