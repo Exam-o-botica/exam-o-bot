@@ -518,6 +518,7 @@ async def handle_spec_current_test_task_query(call: types.CallbackQuery):
         current_task_id=task_id,
         current_messages_to_delete=message_ids_to_delete
     )
+    # TODO Add a new field to Users table: current_task_message
 
 
 async def handle_start_current_test_query(call: types.CallbackQuery):

@@ -70,7 +70,8 @@ async def get_current_user_test_task_state(user_id: int, bot: Bot, message_id: i
 async def handle_question(
         question: Question,
         message_or_call: Message | CallbackQuery,
-        user_id: int, bot: Bot,
+        user_id: int,
+        bot: Bot,
         answer_message_id: int,
         task: Task = None,
 ):
@@ -106,6 +107,7 @@ async def handle_question(
             text=answer_is_saved_text,
             reply_markup=get_back_to_question_text()
         )
+        # TODO Edit the message of question text by adding "Answer is saved"
 
         message_ids_to_delete = (
                 user.current_messages_to_delete +

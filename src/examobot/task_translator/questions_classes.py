@@ -220,9 +220,7 @@ class OneChoiceQuestion(Question):
             if not answer or answer.status == AnswerStatus.UNCHECKED \
             else int(answer.answer_data[0])
 
-        # task = await db_manager.get_task_by_id(task.id)  # TODO WTF?
         text = await Question.get_text_with_options(task, options)
-
         messages_to_delete = await Question.send_new_or_edit_message(
             bot=bot,
             menu_message_id=menu_message_id,
