@@ -8,5 +8,7 @@ __pycache__/
 /src/examobot/bot/mydatabase.db
 /src/examobot/bot/token.json
 /src/examobot/form_handlers/examples/aisecSurveyForm.json
-/src/examobot/form_handlers/credentials/token.json
-/src/examobot/form_handlers/token.json
+
+.env
+client_secrets.json
+token.json
