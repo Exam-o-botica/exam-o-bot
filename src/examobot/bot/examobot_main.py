@@ -23,7 +23,6 @@ from examobot.task_translator.QuestionType import QuestionType
 from examobot.task_translator.questions_classes import *
 from examobot.task_translator.task_translator import Translator, TranslationError
 
-TOKEN = os.getenv("EXAM_O_BOT_TOKEN")
 dp = Dispatcher()
 dp.include_router(tasks_router)
 
