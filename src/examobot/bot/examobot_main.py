@@ -19,7 +19,7 @@ from examobot.definitions import BOT_NAME
 from examobot.form_handlers import *
 from examobot.form_handlers.exceptions import JSONParseError, URLFailedCreationError, BadRequestError, HTMLParseError, \
     TestCompleteFailError
-from examobot.task_translator.QuestionType import QuestionType
+from examobot.task_translator.question_type import QuestionType
 from examobot.task_translator.questions_classes import *
 from examobot.task_translator.task_translator import Translator, TranslationError
 

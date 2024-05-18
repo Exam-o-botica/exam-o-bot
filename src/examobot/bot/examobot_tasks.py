@@ -4,7 +4,7 @@ from aiogram.types import Message, InlineKeyboardMarkup, CallbackQuery
 from examobot.bot.keyboards import get_go_to_main_menu_keyboard, get_current_test_tasks_keyboard
 from examobot.db.manager import db_manager
 from examobot.db.tables import Task, Test
-from examobot.task_translator.QuestionType import QuestionType
+from examobot.task_translator.question_type import QuestionType
 from examobot.task_translator.questions_classes import Question, OneChoiceQuestion, MultipleChoiceQuestion
 from examobot.task_translator.task_keyboards import get_no_options_keyboard, get_back_to_question_text
 
